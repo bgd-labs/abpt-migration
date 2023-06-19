@@ -10,7 +10,7 @@ import {ProposalPayload} from '../src/contracts/ProposalPayload.sol';
 contract DeployPayload is EthereumScript {
   address internal constant STK_ABPT_V2_IMPL = address(0);
 
-  function _deploy(address stkAbptV2Impl) internal returns (address) {
+  function _deploy(address stkAbptV2Impl) public returns (address) {
     return address(new ProposalPayload(stkAbptV2Impl));
   }
 

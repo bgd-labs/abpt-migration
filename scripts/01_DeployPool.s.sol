@@ -15,13 +15,14 @@ contract DeployPool is EthereumScript {
   IWeightedPool2TokensFactory internal constant BALANCER_WEIGHTED_POOL_FACTORY =
     IWeightedPool2TokensFactory(0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0);
 
-  function _deploy() internal returns (address, bytes32) {
+  function _deploy() public returns (address, bytes32) {
     IERC20[] memory assets = new IERC20[](2);
-    assets[0] = IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING);
-    assets[1] = IERC20(AaveV3EthereumAssets.wstETH_UNDERLYING);
+    assets[0] = IERC20(AaveV3EthereumAssets.wstETH_UNDERLYING);
+    assets[1] = IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING);
+
     uint256[] memory weights = new uint256[](2);
-    weights[0] = 0.8 ether;
-    weights[1] = 0.2 ether;
+    weights[0] = 0.2 ether;
+    weights[1] = 0.8 ether;
 
     address pool = BALANCER_WEIGHTED_POOL_FACTORY.create(
       'Aave Balancer Pool Token V2', // name

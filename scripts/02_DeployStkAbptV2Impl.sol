@@ -16,7 +16,7 @@ import {GenericProposal} from '../src/libs/GenericProposal.sol';
 contract DeployImpl is EthereumScript {
   address internal constant ABPT_V2 = address(0);
 
-  function _deploy(address abptV2) internal returns (address) {
+  function _deploy(address abptV2) public returns (address) {
     return
       address(
         new StakedTokenV3(
