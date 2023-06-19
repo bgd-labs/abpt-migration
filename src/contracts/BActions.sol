@@ -135,7 +135,7 @@ contract BActions {
     address internal constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address internal constant VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
-    constructor() {
+    constructor() public {
         _safeApprove(ERC20(STETH), WSTETH, uint(-1));
         _safeApprove(ERC20(AAVE), VAULT, uint(-1));
         _safeApprove(ERC20(WSTETH), VAULT, uint(-1));
@@ -447,8 +447,8 @@ contract BActions {
             request
         );
         // Send "change" back
-        for (uint i = 0; i < tokens.length; i++) {
-            ERC20 token = ERC20(tokens[i]);
+        for (uint i = 0; i < outTokens.length; i++) {
+            ERC20 token = ERC20(outTokens[i]);
             if (token.balanceOf(address(this)) > 0) {
                 require(token.transfer(msg.sender, token.balanceOf(address(this))), "ERR_TRANSFER_FAILED");
             }

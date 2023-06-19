@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {IERC20} from './IERC20.sol';
+import {IERC20} from 'aave-stk-v1-5/interfaces/IERC20.sol';
 
 interface IWeightedPool2TokensFactory {
   function create(
