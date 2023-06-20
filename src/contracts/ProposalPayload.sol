@@ -4,16 +4,21 @@ pragma solidity ^0.8.17;
 import {AaveV3Ethereum, AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveMisc} from 'aave-address-book/AaveMisc.sol';
 import {ITransparentProxyFactory} from 'solidity-utils/contracts/transparent-proxy/interfaces/ITransparentProxyFactory.sol';
+import {ProxyAdmin} from 'solidity-utils/contracts/transparent-proxy/ProxyAdmin.sol';
+import {TransparentUpgradeableProxy} from 'solidity-utils/contracts/transparent-proxy/TransparentUpgradeableProxy.sol';
 import {GenericProposal} from '../libs/GenericProposal.sol';
 import {DistributionTypes} from 'aave-stk-v1-5/lib/DistributionTypes.sol';
 import {IAaveDistributionManager} from 'aave-stk-v1-5/interfaces/IAaveDistributionManager.sol';
 
 contract ProposalPayload {
   address public constant STK_ABPT_V1 = 0xa1116930326D21fB917d5A27F1E9943A9595fb47;
+
+  address public immutable STK_ABPT_V1_IMPL;
   address public immutable STK_ABPT_V2_IMPL;
 
-  constructor(address newStkABPTImpl) {
-    STK_ABPT_V2_IMPL = newStkABPTImpl;
+  constructor(address newStkABPTV1Impl, address newStkABPTV2Impl) {
+    STK_ABPT_V1_IMPL = newStkABPTV1Impl;
+    STK_ABPT_V2_IMPL = newStkABPTV2Impl;
   }
 
   function execute() external {
@@ -27,8 +32,12 @@ contract ProposalPayload {
     });
     IAaveDistributionManager(STK_ABPT_V1).configureAssets(disableConfigs);
 
-    // 2. disable cooldown
-    // TODO: either set cooldown to 0, or upgrade impl
+    // 2. disable cooldown by upgrading the impl
+    ProxyAdmin(AaveMisc.PROXY_ADMIN_ETHEREUM).upgradeAndCall(
+      TransparentUpgradeableProxy(payable(STK_ABPT_V1)),
+      STK_ABPT_V1_IMPL,
+      abi.encodeWithSignature('initialize()')
+    );
 
     // 3. create new SM
     address tokenProxy = ITransparentProxyFactory(AaveMisc.TRANSPARENT_PROXY_FACTORY_ETHEREUM)

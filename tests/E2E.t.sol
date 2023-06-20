@@ -17,9 +17,9 @@ contract E2E is Test {
     DeployPool step1 = new DeployPool();
     (address pool, bytes32 poolId) = step1._deploy();
     DeployImpl step2 = new DeployImpl();
-    address stkAbptV2Impl = step2._deploy(pool);
+    (address stkAbptV1Impl, address stkAbptV2Impl) = step2._deploy(pool);
     DeployPayload step3 = new DeployPayload();
-    address payload = step3._deploy(stkAbptV2Impl);
+    address payload = step3._deploy(stkAbptV1Impl, stkAbptV2Impl);
 
     GovHelpers.executePayload(vm, payload, AaveGovernanceV2.SHORT_EXECUTOR);
   }
