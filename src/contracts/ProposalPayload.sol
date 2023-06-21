@@ -19,17 +19,20 @@ contract ProposalPayload {
 
   address public immutable STK_ABPT_V1_IMPL;
   address public immutable STK_ABPT_V2_IMPL;
+  address public immutable STK_ABPT_V2_PROXY;
   address public immutable BALANCER_POOL_V2;
   bytes32 public immutable BALANCER_POOL_V2_ID;
 
   constructor(
     address newStkABPTV1Impl,
     address newStkABPTV2Impl,
+    address stkABPTV2Proxy,
     address balancerPoolV2,
     bytes32 balancerPoolV2Id
   ) {
     STK_ABPT_V1_IMPL = newStkABPTV1Impl;
     STK_ABPT_V2_IMPL = newStkABPTV2Impl;
+    STK_ABPT_V2_PROXY = stkABPTV2Proxy;
     BALANCER_POOL_V2 = balancerPoolV2;
     BALANCER_POOL_V2_ID = balancerPoolV2Id;
   }
@@ -53,20 +56,18 @@ contract ProposalPayload {
     );
 
     // 3. create new SM
-    address tokenProxy = ITransparentProxyFactory(AaveMisc.TRANSPARENT_PROXY_FACTORY_ETHEREUM)
-      .createDeterministic(
-        STK_ABPT_V2_IMPL,
-        AaveMisc.PROXY_ADMIN_ETHEREUM,
-        abi.encodeWithSignature(
-          'initialize(address,address,address,uint256,uint256)',
-          GenericProposal.SLASHING_ADMIN,
-          GenericProposal.COOLDOWN_ADMIN,
-          GenericProposal.CLAIM_HELPER,
-          GenericProposal.MAX_SLASHING,
-          GenericProposal.COOLDOWN_SECONDS
-        ),
-        'ABPT_V2'
-      );
+    ProxyAdmin(AaveMisc.PROXY_ADMIN_ETHEREUM).upgradeAndCall(
+      TransparentUpgradeableProxy(payable(STK_ABPT_V2_PROXY)),
+      STK_ABPT_V2_IMPL,
+      abi.encodeWithSignature(
+        'initialize(address,address,address,uint256,uint256)',
+        GenericProposal.SLASHING_ADMIN,
+        GenericProposal.COOLDOWN_ADMIN,
+        GenericProposal.CLAIM_HELPER,
+        GenericProposal.MAX_SLASHING,
+        GenericProposal.COOLDOWN_SECONDS
+      )
+    );
 
     // 4. start emission on module v2
     DistributionTypes.AssetConfigInput[]
@@ -74,8 +75,8 @@ contract ProposalPayload {
     enableConfigs[0] = DistributionTypes.AssetConfigInput({
       emissionPerSecond: 6365740740740741, // same as current
       totalStaked: 0, // it's overwritten internally
-      underlyingAsset: tokenProxy
+      underlyingAsset: STK_ABPT_V2_PROXY
     });
-    IAaveDistributionManager(tokenProxy).configureAssets(enableConfigs);
+    IAaveDistributionManager(STK_ABPT_V2_PROXY).configureAssets(enableConfigs);
   }
 }

@@ -24,49 +24,44 @@ contract BActions {
   address public constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
   address public constant VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
-  constructor() public {
-    _safeApprove(ERC20(STETH), WSTETH, type(uint256).max);
-    _safeApprove(ERC20(AAVE), VAULT, type(uint256).max);
-    _safeApprove(ERC20(WSTETH), VAULT, type(uint256).max);
-    _safeApprove(ERC20(WETH), WETH, type(uint256).max);
+  address public immutable ABPT_V2;
+  address public immutable STK_ABPT_V2;
+
+  constructor(address abptV2, address stkABPTV2) {
+    // infinite approval for putting aave into the lp
+    _safeApprove(ERC20(Addresses.AAVE), Addresses.BALANCER_VAULT, type(uint256).max);
+    // infinite approval for wrapping stETH
+    _safeApprove(ERC20(Addresses.STETH), Addresses.WSTETH, type(uint256).max);
+    // infinite approval for pussing wstETH into the lp
+    _safeApprove(ERC20(Addresses.WSTETH), Addresses.BALANCER_VAULT, type(uint256).max);
+    // infinite approval for putting the lp into stkLP
+    _safeApprove(ERC20(abptV2), stkABPTV2, type(uint256).max);
+    ABPT_V2 = abptV2;
+    STK_ABPT_V2 = stkABPTV2;
   }
 
   receive() external payable {}
 
   // --- Migration ---
 
-  function migrateProportionally(
-    Vault vault,
-    BPool poolIn,
+  function _migrateProportionally(
     uint poolInAmount,
     uint[] calldata tokenOutAmountsMin,
-    BalancerPool poolOut,
     uint poolOutAmountMin
-  ) external {
-    address[] memory tokens = poolIn.getFinalTokens();
-    (address[] memory outTokens, uint[] memory tokenInAmounts, ) = vault.getPoolTokens(
-      poolOut.getPoolId()
-    );
-    require(tokens.length == 2);
-    require(outTokens.length == 2);
-    require(tokens[0] == AAVE && outTokens[0] == AAVE);
-    require(tokens[1] == WETH && outTokens[1] == WSTETH);
-    // Transfer v1 BPTs to proxy
-    poolIn.transferFrom(msg.sender, address(this), poolInAmount);
+  ) internal {
     // Exit v1 pool
-    poolIn.exitPool(poolInAmount, tokenOutAmountsMin);
-    // Unwrap WETH
-    uint256 wethBalance = ERC20(WETH).balanceOf(address(this));
-    IWeth(WETH).withdraw(wethBalance);
-    // wrap to stETH
-    ILido(STETH).submit{value: wethBalance}(address(0));
-    // wrap to wstETH
-    IWstETH(WSTETH).wrap(ERC20(STETH).balanceOf(address(this)));
+    BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
+    (address[] memory outTokens, uint[] memory tokenInAmounts, ) = Vault(VAULT).getPoolTokens(
+      BalancerPool(ABPT_V2).getPoolId()
+    );
+    // migrate weth to wstETH
+    _wethToWesth();
     // Calculate amounts for even join
     // 1) find the lowest UserBalance-to-PoolBalance ratio
     // 2) multiply by this ratio to get in amounts
     uint lowestRatio = type(uint256).max;
     uint lowestRatioToken = 0;
+
     for (uint i = 0; i < outTokens.length; ++i) {
       uint ratio = (1 ether * ERC20(outTokens[i]).balanceOf(address(this))) / tokenInAmounts[i];
       if (ratio < lowestRatio) {
@@ -94,7 +89,12 @@ contract BActions {
       userData,
       false
     );
-    vault.joinPool(poolOut.getPoolId(), address(this), msg.sender, request);
+    Vault(Addresses.BALANCER_VAULT).joinPool(
+      BalancerPool(ABPT_V2).getPoolId(),
+      address(this),
+      address(this),
+      request
+    );
     // Send "change" back
     for (uint i = 0; i < outTokens.length; i++) {
       ERC20 token = ERC20(outTokens[i]);
@@ -104,24 +104,14 @@ contract BActions {
     }
   }
 
-  function migrateAll(
+  function _migrateAll(
     uint poolInAmount,
     uint[] calldata tokenOutAmountsMin,
-    BalancerPool poolOut, // TODO: can potentially be hardcoded
-    uint poolOutAmountMin,
-    bool pull
-  ) public {
-    if (pull) {
-      // Transfer v1 BPTs to proxy
-      BPool(Addresses.ABPT_V1).transferFrom(msg.sender, address(this), poolInAmount);
-    }
+    uint poolOutAmountMin
+  ) internal {
     // Exit v1 pool
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
-    // Unwrap WETH
-    uint256 wethBalance = ERC20(WETH).balanceOf(address(this));
-    IWeth(WETH).withdraw(wethBalance);
-    ILido(STETH).submit{value: wethBalance}(address(0));
-    IWstETH(WSTETH).wrap(ERC20(STETH).balanceOf(address(this)));
+    _wethToWesth();
     // Join v2 pool and transfer v2 BPTs to user
     address[] memory outTokens = new address[](2);
     outTokens[0] = WSTETH;
@@ -143,28 +133,48 @@ contract BActions {
       false
     );
     Vault(Addresses.BALANCER_VAULT).joinPool(
-      poolOut.getPoolId(),
+      BalancerPool(ABPT_V2).getPoolId(),
       address(this),
-      msg.sender,
+      address(this),
       request
     );
   }
 
-  function migrateAllStkABPT(
+  function migrateStkABPT(
     uint256 amount,
     uint[] calldata tokenOutAmountsMin,
-    BalancerPool poolOut, // TODO: can potentially be hardcoded
-    uint poolOutAmountMin
+    uint poolOutAmountMin,
+    bool all
   ) external {
     AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).transferFrom(msg.sender, address(this), amount);
     AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).redeem(address(this), amount);
-    migrateAll(
-      BPool(Addresses.ABPT_V1).balanceOf(address(this)),
-      tokenOutAmountsMin,
-      poolOut,
-      poolOutAmountMin,
-      false
+    if (all) {
+      _migrateAll(
+        BPool(Addresses.ABPT_V1).balanceOf(address(this)),
+        tokenOutAmountsMin,
+        poolOutAmountMin
+      );
+    } else {
+      _migrateProportionally(
+        BPool(Addresses.ABPT_V1).balanceOf(address(this)),
+        tokenOutAmountsMin,
+        poolOutAmountMin
+      );
+    }
+    AggregatedStakedTokenV3(STK_ABPT_V2).stake(
+      msg.sender,
+      BalancerPool(ABPT_V2).balanceOf(address(this))
     );
+  }
+
+  function _wethToWesth() internal {
+    // Unwrap WETH to ETH
+    uint256 wethBalance = ERC20(WETH).balanceOf(address(this));
+    IWeth(WETH).withdraw(wethBalance);
+    // supply ETH to stETH
+    ILido(STETH).submit{value: wethBalance}(address(0));
+    // wrap stETH to wstETH
+    IWstETH(WSTETH).wrap(ERC20(STETH).balanceOf(address(this)));
   }
 
   // --- Internals ---FrÃ©land, 68240, Franceranrupt

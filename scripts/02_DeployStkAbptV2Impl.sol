@@ -8,6 +8,7 @@ import {EthereumScript} from 'aave-helpers/ScriptUtils.sol';
 import {StakedTokenV3 as StakedTokenV3NoCooldown, IERC20 as IERC20NoCooldown} from 'stk-no-cooldown/contracts/StakedTokenV3.sol';
 import {StakedTokenV3} from 'aave-stk-v1-5/contracts/StakedTokenV3.sol';
 import {IERC20} from 'aave-stk-v1-5/interfaces/IERC20.sol';
+import {ITransparentProxyFactory} from 'solidity-utils/contracts/transparent-proxy/interfaces/ITransparentProxyFactory.sol';
 import {IWeightedPool} from '../src/interfaces/IWeightedPool.sol';
 import {GenericProposal} from '../src/libs/GenericProposal.sol';
 
@@ -18,7 +19,20 @@ contract DeployImpl is EthereumScript {
   address public constant ABPT_V1 = 0x41A08648C3766F9F9d85598fF102a08f4ef84F84;
   address internal constant ABPT_V2 = address(0);
 
-  function _deploy(address abptV2) public returns (address, address) {
+  function _deploy(address abptV2) public returns (address, address, address) {
+    address stkABPTV2Implt = address(
+      new StakedTokenV3(
+        IERC20(abptV2),
+        IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING),
+        GenericProposal.UNSTAKE_WINDOW,
+        GenericProposal.REWARDS_VAULT,
+        GenericProposal.EMISSION_MANAGER,
+        GenericProposal.DISTRIBUTION_DURATION
+      )
+    );
+
+    address tokenProxy = ITransparentProxyFactory(AaveMisc.TRANSPARENT_PROXY_FACTORY_ETHEREUM)
+      .createDeterministic(stkABPTV2Implt, AaveMisc.PROXY_ADMIN_ETHEREUM, bytes(''), 'ABPT_V2');
     return (
       address(
         new StakedTokenV3NoCooldown(
@@ -30,16 +44,8 @@ contract DeployImpl is EthereumScript {
           GenericProposal.DISTRIBUTION_DURATION
         )
       ),
-      address(
-        new StakedTokenV3(
-          IERC20(abptV2),
-          IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING),
-          GenericProposal.UNSTAKE_WINDOW,
-          GenericProposal.REWARDS_VAULT,
-          GenericProposal.EMISSION_MANAGER,
-          GenericProposal.DISTRIBUTION_DURATION
-        )
-      )
+      stkABPTV2Implt,
+      tokenProxy
     );
   }
 
