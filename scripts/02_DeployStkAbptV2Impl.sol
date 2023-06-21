@@ -8,7 +8,7 @@ import {EthereumScript} from 'aave-helpers/ScriptUtils.sol';
 import {StakedTokenV3 as StakedTokenV3NoCooldown, IERC20 as IERC20NoCooldown} from 'stk-no-cooldown/contracts/StakedTokenV3.sol';
 import {StakedTokenV3} from 'aave-stk-v1-5/contracts/StakedTokenV3.sol';
 import {IERC20} from 'aave-stk-v1-5/interfaces/IERC20.sol';
-import {IWeightedPool2Tokens} from '../src/interfaces/IWeightedPool2Tokens.sol';
+import {IWeightedPool} from '../src/interfaces/IWeightedPool.sol';
 import {GenericProposal} from '../src/libs/GenericProposal.sol';
 
 /**

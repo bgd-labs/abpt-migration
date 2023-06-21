@@ -2,5 +2,3 @@ out
 lib
 cache
 node_modules
-
-src/contracts/BActions.sol
