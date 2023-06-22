@@ -32,6 +32,13 @@ contract StkABPTMigrator {
    */
   receive() external payable {}
 
+  /**
+   * migration via approval flow
+   * @param amount the amount of stkABPT to migrate
+   * @param tokenOutAmountsMin the minimum amount of AAVE/WETH you want to receive for redemption
+   * @param poolOutAmountMin the minimum amount of stkABPTV2 tokens you want to receive
+   * @param all if true, will migrate all AAVE/WETH. If false will migrate proportionally and send the leftovers to your address.
+   */
   function migrateStkABPT(
     uint256 amount,
     uint[] calldata tokenOutAmountsMin,
@@ -41,6 +48,13 @@ contract StkABPTMigrator {
     _migrate(amount, tokenOutAmountsMin, poolOutAmountMin, all);
   }
 
+  /**
+   * migration via permit
+   * @param amount the amount of stkABPT to migrate
+   * @param tokenOutAmountsMin the minimum amount of AAVE/WETH you want to receive for redemption
+   * @param poolOutAmountMin the minimum amount of stkABPTV2 tokens you want to receive
+   * @param all if true, will migrate all AAVE/WETH. If false will migrate proportionally and send the leftovers to your address.
+   */
   function migrateStkABPTWithPermit(
     address from,
     uint256 amount,
