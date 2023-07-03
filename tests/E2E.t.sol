@@ -124,4 +124,12 @@ contract E2E is Test {
       true
     );
   }
+
+  function testClaimRewards() public {
+    testMigrateStkAbpt();
+    vm.warp(block.timestamp + 10000);
+    uint256 rewards = AggregatedStakedTokenV3(stkABPTV2).getTotalRewardsBalance(owner);
+    assertGt(rewards, 0);
+    AggregatedStakedTokenV3(stkABPTV2).claimRewards(owner, type(uint256).max);
+  }
 }

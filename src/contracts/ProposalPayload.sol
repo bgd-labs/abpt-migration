@@ -70,6 +70,12 @@ contract ProposalPayload {
     );
 
     // 4. start emission on module v2
+    AaveMisc.AAVE_ECOSYSTEM_RESERVE_CONTROLLER.approve(
+      AaveMisc.ECOSYSTEM_RESERVE,
+      AAVE,
+      STK_ABPT_V2_PROXY,
+      180_000 ether // TODO: whatis the correct value here?
+    );
     DistributionTypes.AssetConfigInput[]
       memory enableConfigs = new DistributionTypes.AssetConfigInput[](1);
     enableConfigs[0] = DistributionTypes.AssetConfigInput({
