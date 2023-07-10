@@ -14,20 +14,15 @@ contract DeployPayload is EthereumScript {
   function _deploy(
     address stkAbptV1Impl,
     address stkAbptV2Impl,
-    address stkAbptV2Proxy,
-    address poolV2,
-    bytes32 poolV2Id
+    address stkAbptV2Proxy
   ) public returns (address) {
     require(stkAbptV1Impl != address(0));
     require(stkAbptV2Impl != address(0));
     require(stkAbptV2Proxy != address(0));
-    require(poolV2 != address(0));
-    require(poolV2Id != bytes32(0));
-    return
-      address(new ProposalPayload(stkAbptV1Impl, stkAbptV2Impl, stkAbptV2Proxy, poolV2, poolV2Id));
+    return address(new ProposalPayload(stkAbptV1Impl, stkAbptV2Impl, stkAbptV2Proxy));
   }
 
   function run() external broadcast {
-    _deploy(STK_ABPT_V1_IMPL, STK_ABPT_V2_IMPL, address(0), address(0), bytes32(0));
+    _deploy(STK_ABPT_V1_IMPL, STK_ABPT_V2_IMPL, address(0));
   }
 }

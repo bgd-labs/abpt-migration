@@ -7,9 +7,8 @@ import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
 import {AaveV3Ethereum, AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
 import {IERC20} from 'aave-stk-v1-5/interfaces/IERC20.sol';
-import {DeployPool} from '../scripts/01_DeployPool.s.sol';
-import {DeployImpl} from '../scripts/02_DeployStkAbptV2Impl.sol';
-import {DeployPayload} from '../scripts/03_DeployPayload.sol';
+import {DeployImpl} from '../scripts/01_DeployStkAbptV2Impl.sol';
+import {DeployPayload} from '../scripts/02_DeployPayload.sol';
 import {StkABPTMigrator} from '../src/contracts/StkABPTMigrator.sol';
 import {SigUtils} from './SigUtils.sol';
 
@@ -20,30 +19,23 @@ contract E2E is Test {
   address public stkAbptV1Impl;
   address public stkAbptV2Impl;
   address public stkABPTV2;
-  address public v2Pool;
-  bytes32 public v2PoolId;
   StkABPTMigrator public migrator;
 
   uint256 internal ownerPrivateKey;
   address internal owner;
 
   function setUp() external {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 17514427);
-    // Deploy pool TODO: remove once pool is live
-    DeployPool step1 = new DeployPool();
-    (v2Pool, v2PoolId) = step1._deploy();
-    step1._init(v2PoolId);
-
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 17663919);
     // deploy impls
-    DeployImpl step2 = new DeployImpl();
-    (stkAbptV1Impl, stkAbptV2Impl, stkABPTV2) = step2._deploy(v2Pool);
+    DeployImpl step1 = new DeployImpl();
+    (stkAbptV1Impl, stkAbptV2Impl, stkABPTV2) = step1._deploy();
 
     // deploy actual payload
-    DeployPayload step3 = new DeployPayload();
-    address payload = step3._deploy(stkAbptV1Impl, stkAbptV2Impl, stkABPTV2, v2Pool, v2PoolId);
+    DeployPayload step2 = new DeployPayload();
+    address payload = step2._deploy(stkAbptV1Impl, stkAbptV2Impl, stkABPTV2);
 
     // deploy migration helper
-    migrator = new StkABPTMigrator(v2Pool, stkABPTV2);
+    migrator = new StkABPTMigrator(stkABPTV2);
 
     // execute proposal
     GovHelpers.executePayload(vm, payload, AaveGovernanceV2.SHORT_EXECUTOR);
@@ -83,7 +75,7 @@ contract E2E is Test {
     IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
     uint[] memory tokenOutAmountsMin = new uint[](2);
     migrator.migrateStkABPT(IERC20(STK_ABPT_V1).balanceOf(owner), tokenOutAmountsMin, 0, true);
-    assertEq(IERC20(stkABPTV2).balanceOf(owner), 231860133214691104707063);
+    assertEq(IERC20(stkABPTV2).balanceOf(owner), 232053426840979065985899);
   }
 
   /**
@@ -93,7 +85,7 @@ contract E2E is Test {
     IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
     uint[] memory tokenOutAmountsMin = new uint[](2);
     migrator.migrateStkABPT(IERC20(STK_ABPT_V1).balanceOf(owner), tokenOutAmountsMin, 0, false);
-    assertEq(IERC20(stkABPTV2).balanceOf(owner), 14895707098461386766742);
+    assertEq(IERC20(stkABPTV2).balanceOf(owner), 231282239606672010155655);
   }
 
   function testMigrationWithPermit() public {

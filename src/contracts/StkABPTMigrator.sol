@@ -11,10 +11,9 @@ import {Addresses} from '../libs/Addresses.sol';
 import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
 
 contract StkABPTMigrator {
-  address public immutable ABPT_V2;
   address public immutable STK_ABPT_V2;
 
-  constructor(address abptV2, address stkABPTV2) {
+  constructor(address stkABPTV2) {
     // infinite approval for putting aave into the lp
     _safeApprove(ERC20(Addresses.AAVE), Addresses.BALANCER_VAULT, type(uint256).max);
     // infinite approval for wrapping stETH
@@ -22,8 +21,7 @@ contract StkABPTMigrator {
     // infinite approval for pussing wstETH into the lp
     _safeApprove(ERC20(Addresses.WSTETH), Addresses.BALANCER_VAULT, type(uint256).max);
     // infinite approval for putting the lp into stkLP
-    _safeApprove(ERC20(abptV2), stkABPTV2, type(uint256).max);
-    ABPT_V2 = abptV2;
+    _safeApprove(ERC20(Addresses.ABPT_V2), stkABPTV2, type(uint256).max);
     STK_ABPT_V2 = stkABPTV2;
   }
 
@@ -101,7 +99,7 @@ contract StkABPTMigrator {
     }
     AggregatedStakedTokenV3(STK_ABPT_V2).stake(
       msg.sender,
-      BalancerPool(ABPT_V2).balanceOf(address(this))
+      BalancerPool(Addresses.ABPT_V2).balanceOf(address(this))
     );
   }
 
@@ -113,7 +111,7 @@ contract StkABPTMigrator {
     // Exit v1 pool
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
     (address[] memory outTokens, uint[] memory tokenInAmounts, ) = Vault(Addresses.BALANCER_VAULT)
-      .getPoolTokens(BalancerPool(ABPT_V2).getPoolId()); // TODO: poolId can be static
+      .getPoolTokens(Addresses.ABPT_V2_ID);
     // migrate weth to wstETH
     _wethToWesth();
     // Calculate amounts for even join
@@ -150,7 +148,7 @@ contract StkABPTMigrator {
       false
     );
     Vault(Addresses.BALANCER_VAULT).joinPool(
-      BalancerPool(ABPT_V2).getPoolId(), // TODO: poolId can be static
+      Addresses.ABPT_V2_ID,
       address(this),
       address(this),
       request
@@ -193,7 +191,7 @@ contract StkABPTMigrator {
       false
     );
     Vault(Addresses.BALANCER_VAULT).joinPool(
-      BalancerPool(ABPT_V2).getPoolId(), // TODO: poolId can be static
+      Addresses.ABPT_V2_ID,
       address(this),
       address(this),
       request

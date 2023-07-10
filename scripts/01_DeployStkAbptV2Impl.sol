@@ -11,18 +11,16 @@ import {IERC20} from 'aave-stk-v1-5/interfaces/IERC20.sol';
 import {ITransparentProxyFactory} from 'solidity-utils/contracts/transparent-proxy/interfaces/ITransparentProxyFactory.sol';
 import {IWeightedPool} from '../src/interfaces/IWeightedPool.sol';
 import {GenericProposal} from '../src/libs/GenericProposal.sol';
+import {Addresses} from '../src/libs/Addresses.sol';
 
 /**
  * @notice Deploys a the implementation for the pool with the bricked initialize.
  */
 contract DeployImpl is EthereumScript {
-  address public constant ABPT_V1 = 0x41A08648C3766F9F9d85598fF102a08f4ef84F84;
-  address internal constant ABPT_V2 = address(0);
-
-  function _deploy(address abptV2) public returns (address, address, address) {
-    address stkABPTV2Implt = address(
+  function _deploy() public returns (address, address, address) {
+    address stkABPTV2Impl = address(
       new StakedTokenV3(
-        IERC20(abptV2),
+        IERC20(Addresses.ABPT_V2),
         IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING),
         GenericProposal.UNSTAKE_WINDOW,
         GenericProposal.REWARDS_VAULT,
@@ -32,11 +30,11 @@ contract DeployImpl is EthereumScript {
     );
 
     address tokenProxy = ITransparentProxyFactory(AaveMisc.TRANSPARENT_PROXY_FACTORY_ETHEREUM)
-      .createDeterministic(stkABPTV2Implt, AaveMisc.PROXY_ADMIN_ETHEREUM, bytes(''), 'ABPT_V2');
+      .createDeterministic(stkABPTV2Impl, AaveMisc.PROXY_ADMIN_ETHEREUM, bytes(''), 'ABPT_V2');
     return (
       address(
         new StakedTokenV3NoCooldown(
-          IERC20NoCooldown(ABPT_V1),
+          IERC20NoCooldown(Addresses.ABPT_V1),
           IERC20NoCooldown(AaveV3EthereumAssets.AAVE_UNDERLYING),
           GenericProposal.UNSTAKE_WINDOW,
           GenericProposal.REWARDS_VAULT,
@@ -44,13 +42,12 @@ contract DeployImpl is EthereumScript {
           GenericProposal.DISTRIBUTION_DURATION
         )
       ),
-      stkABPTV2Implt,
+      stkABPTV2Impl,
       tokenProxy
     );
   }
 
   function run() external broadcast {
-    require(ABPT_V2 != address(0));
-    _deploy(ABPT_V2);
+    _deploy();
   }
 }

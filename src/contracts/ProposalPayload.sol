@@ -10,6 +10,7 @@ import {GenericProposal} from '../libs/GenericProposal.sol';
 import {DistributionTypes} from 'aave-stk-v1-5/lib/DistributionTypes.sol';
 import {IAaveDistributionManager} from 'aave-stk-v1-5/interfaces/IAaveDistributionManager.sol';
 import {Vault} from '../interfaces/Actions.sol';
+import {Addresses} from '../libs/Addresses.sol';
 
 contract ProposalPayload {
   address public constant AAVE = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
@@ -20,21 +21,11 @@ contract ProposalPayload {
   address public immutable STK_ABPT_V1_IMPL;
   address public immutable STK_ABPT_V2_IMPL;
   address public immutable STK_ABPT_V2_PROXY;
-  address public immutable BALANCER_POOL_V2;
-  bytes32 public immutable BALANCER_POOL_V2_ID;
 
-  constructor(
-    address newStkABPTV1Impl,
-    address newStkABPTV2Impl,
-    address stkABPTV2Proxy,
-    address balancerPoolV2,
-    bytes32 balancerPoolV2Id
-  ) {
+  constructor(address newStkABPTV1Impl, address newStkABPTV2Impl, address stkABPTV2Proxy) {
     STK_ABPT_V1_IMPL = newStkABPTV1Impl;
     STK_ABPT_V2_IMPL = newStkABPTV2Impl;
     STK_ABPT_V2_PROXY = stkABPTV2Proxy;
-    BALANCER_POOL_V2 = balancerPoolV2;
-    BALANCER_POOL_V2_ID = balancerPoolV2Id;
   }
 
   function execute() external {
