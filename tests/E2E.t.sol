@@ -7,6 +7,7 @@ import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
 import {AaveV3Ethereum, AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
 import {IERC20} from 'aave-stk-v1-5/interfaces/IERC20.sol';
+import {DeployOracles} from '../scripts/00_PriceOracles.s.sol';
 import {DeployImpl} from '../scripts/01_DeployStkAbptV2Impl.sol';
 import {DeployPayload} from '../scripts/02_DeployPayload.sol';
 import {StkABPTMigrator} from '../src/contracts/StkABPTMigrator.sol';
@@ -23,12 +24,19 @@ contract E2E is Test {
   address public stkAbptV2Impl;
   address public stkABPTV2;
   StkABPTMigrator public migrator;
+  BalancerSharedPoolPriceProvider abptOracle;
+  BalancerV2SharedPoolPriceProvider abptv2Oracle;
 
   uint256 internal ownerPrivateKey;
   address internal owner;
 
   function setUp() external {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 17663919);
+    DeployOracles step0 = new DeployOracles();
+    (address oracle1, address oracle2) = step0._deploy();
+    abptOracle = BalancerSharedPoolPriceProvider(oracle1);
+    abptv2Oracle = BalancerV2SharedPoolPriceProvider(oracle2);
+
     // deploy impls
     DeployImpl step1 = new DeployImpl();
     (stkAbptV1Impl, stkAbptV2Impl, stkABPTV2) = step1._deploy();
@@ -75,9 +83,15 @@ contract E2E is Test {
    * @dev Migrate stkAbpt -> stkAbpt v2 via BActions
    */
   function testMigrateStkAbpt() public {
+    uint256 amount = IERC20(STK_ABPT_V1).balanceOf(owner);
     IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
     uint[] memory tokenOutAmountsMin = new uint[](2);
-    migrator.migrateStkABPT(IERC20(STK_ABPT_V1).balanceOf(owner), tokenOutAmountsMin, 0, true);
+
+    // this should happen offchain
+    uint256 minBptOut = (((amount * uint256(abptOracle.latestAnswer())) /
+      uint256(abptv2Oracle.latestAnswer())) * 995) / 1000;
+
+    migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOut, true);
     assertEq(IERC20(stkABPTV2).balanceOf(owner), 232053426840979065985899);
   }
 

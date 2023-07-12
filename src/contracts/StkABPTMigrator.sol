@@ -35,22 +35,6 @@ contract StkABPTMigrator {
    */
   receive() external payable {}
 
-  function getAbptV1Price() external view {
-    address[] memory assets = new address[](2);
-    assets[0] = Addresses.AAVE;
-    assets[1] = Addresses.WETH;
-    uint256[] memory prices = AaveV3Ethereum.ORACLE.getAssetsPrices(assets);
-    // bpool get balances
-    // bpool get weights
-  }
-
-  function getAbptV2Price() external view {
-    uint256 wstETHLatestAnswer = uint256(
-      AggregatorInterface(Addresses.WSTETH_ORACLE).latestAnswer()
-    );
-    uint256 aaveLatestAnswer = uint256(AggregatorInterface(Addresses.AAVE_ORACLE).latestAnswer());
-  }
-
   /**
    * migration via approval flow
    * @param amount the amount of stkABPT to migrate
