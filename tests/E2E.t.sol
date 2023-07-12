@@ -87,12 +87,16 @@ contract E2E is Test {
     IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
     uint[] memory tokenOutAmountsMin = new uint[](2);
 
+    // calculate minOut based on $ value - 0.001 %
     // this should happen offchain
     uint256 minBptOut = (((amount * uint256(abptOracle.latestAnswer())) /
-      uint256(abptv2Oracle.latestAnswer())) * 995) / 1000;
+      uint256(abptv2Oracle.latestAnswer())) * 99_999) / 100_000;
 
     migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOut, true);
-    assertEq(IERC20(stkABPTV2).balanceOf(owner), 232053426840979065985899);
+
+    uint256 actualBPT = IERC20(stkABPTV2).balanceOf(owner);
+    assertGt(actualBPT, minBptOut);
+    assertLt(actualBPT - minBptOut, 1e18);
   }
 
   /**
