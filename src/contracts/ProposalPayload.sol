@@ -12,6 +12,11 @@ import {IAaveDistributionManager} from 'aave-stk-v1-5/interfaces/IAaveDistributi
 import {Vault} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
 
+/**
+ * @title StkABPTV2 Proposal
+ * @author BGD Labs
+ * @notice migrates emissions to a new stkABPT
+ */
 contract ProposalPayload {
   address public constant AAVE = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
   address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;

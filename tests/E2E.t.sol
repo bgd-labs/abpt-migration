@@ -11,6 +11,9 @@ import {DeployImpl} from '../scripts/01_DeployStkAbptV2Impl.sol';
 import {DeployPayload} from '../scripts/02_DeployPayload.sol';
 import {StkABPTMigrator} from '../src/contracts/StkABPTMigrator.sol';
 import {SigUtils} from './SigUtils.sol';
+import {BalancerSharedPoolPriceProvider, BPool} from '../src/contracts/lp-oracle-contracts/aggregators/BalancerSharedPoolPriceProvider.sol';
+import {BalancerV2SharedPoolPriceProvider, BVaultV2, BPoolV2} from '../src/contracts/lp-oracle-contracts/aggregators/BalancerV2SharedPoolPriceProvider.sol';
+import {Addresses} from '../src/libs/Addresses.sol';
 
 contract E2E is Test {
   address constant STK_ABPT_WHALE = 0xF23c8539069C471F5C12692a3471C9F4E8B88BC2;
@@ -123,5 +126,48 @@ contract E2E is Test {
     uint256 rewards = AggregatedStakedTokenV3(stkABPTV2).getTotalRewardsBalance(owner);
     assertGt(rewards, 0);
     AggregatedStakedTokenV3(stkABPTV2).claimRewards(owner, type(uint256).max);
+  }
+}
+
+contract OracleTest is Test {
+  function setUp() external {
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 17663919);
+  }
+
+  function testV1OraclePrice() public {
+    uint256[][] memory approxMatrix = new uint256[][](0);
+    uint8[] memory decimals = new uint8[](2);
+    decimals[0] = 18;
+    decimals[1] = 18;
+    BalancerSharedPoolPriceProvider oracle = new BalancerSharedPoolPriceProvider({
+      _pool: BPool(Addresses.ABPT_V1_BPOOL),
+      _decimals: decimals,
+      _priceOracle: AaveV3Ethereum.ORACLE,
+      _maxPriceDeviation: 50000000000000000,
+      _K: 2000000000000000000,
+      _powerPrecision: 100000000,
+      _approximationMatrix: approxMatrix
+    });
+
+    console.log(uint256(oracle.latestAnswer()));
+  }
+
+  function testV2OraclePrice() public {
+    uint256[][] memory approxMatrix = new uint256[][](0);
+    uint8[] memory decimals = new uint8[](2);
+    decimals[0] = 18;
+    decimals[1] = 18;
+    BalancerV2SharedPoolPriceProvider oracle = new BalancerV2SharedPoolPriceProvider({
+      _pool: BPoolV2(Addresses.ABPT_V2),
+      _vault: BVaultV2(Addresses.BALANCER_VAULT),
+      _decimals: decimals,
+      _priceOracle: AaveV3Ethereum.ORACLE,
+      _maxPriceDeviation: 50000000000000000,
+      _K: 2000000000000000000,
+      _powerPrecision: 100000000,
+      _approximationMatrix: approxMatrix
+    });
+
+    console.log(uint256(oracle.latestAnswer()));
   }
 }

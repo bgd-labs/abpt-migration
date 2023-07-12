@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.6.12;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
 
-pragma experimental ABIEncoderV2;
-
+import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
+import {AggregatorInterface} from 'aave-address-book/AaveV3.sol';
 import {ILido} from '../interfaces/ILido.sol';
 import {IWeth} from '../interfaces/IWeth.sol';
 import {IWstETH} from '../interfaces/IWstETH.sol';
@@ -10,6 +10,11 @@ import {Vault, BPool, BalancerPool, ERC20} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
 import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
 
+/**
+ * @title StkABPTMigrator
+ * @author BGD Labs
+ * @notice allows migration from abptv1 to abptv2
+ */
 contract StkABPTMigrator {
   address public immutable STK_ABPT_V2;
 
@@ -29,6 +34,22 @@ contract StkABPTMigrator {
    * @dev Needed as token will unwrap WETH to ETH, before wrapping into stETH & wstETH
    */
   receive() external payable {}
+
+  function getAbptV1Price() external view {
+    address[] memory assets = new address[](2);
+    assets[0] = Addresses.AAVE;
+    assets[1] = Addresses.WETH;
+    uint256[] memory prices = AaveV3Ethereum.ORACLE.getAssetsPrices(assets);
+    // bpool get balances
+    // bpool get weights
+  }
+
+  function getAbptV2Price() external view {
+    uint256 wstETHLatestAnswer = uint256(
+      AggregatorInterface(Addresses.WSTETH_ORACLE).latestAnswer()
+    );
+    uint256 aaveLatestAnswer = uint256(AggregatorInterface(Addresses.AAVE_ORACLE).latestAnswer());
+  }
 
   /**
    * migration via approval flow
