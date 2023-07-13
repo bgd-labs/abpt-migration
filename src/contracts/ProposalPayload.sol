@@ -70,7 +70,7 @@ contract ProposalPayload {
       AaveMisc.ECOSYSTEM_RESERVE,
       AAVE,
       STK_ABPT_V2_PROXY,
-      180_000 ether // TODO: whatis the correct value here?
+      180_000 ether // TODO: what is the correct value here?
     );
     DistributionTypes.AssetConfigInput[]
       memory enableConfigs = new DistributionTypes.AssetConfigInput[](1);

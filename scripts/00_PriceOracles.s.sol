@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
 import {EthereumScript} from 'aave-helpers/ScriptUtils.sol';
-import {BalancerSharedPoolPriceProvider, BPool} from '../src/contracts/lp-oracle-contracts/aggregators/BalancerSharedPoolPriceProvider.sol';
-import {BalancerV2SharedPoolPriceProvider, BVaultV2, BPoolV2} from '../src/contracts/lp-oracle-contracts/aggregators/BalancerV2SharedPoolPriceProvider.sol';
+import {BalancerSharedPoolPriceProvider, BPool} from '../src/contracts/BalancerSharedPoolPriceProvider.sol';
+import {BalancerV2SharedPoolPriceProvider, BVaultV2, BPoolV2} from '../src/contracts/BalancerV2SharedPoolPriceProvider.sol';
 import {Addresses} from '../src/libs/Addresses.sol';
 
 contract DeployOracles is EthereumScript {

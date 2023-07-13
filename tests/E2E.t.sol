@@ -12,8 +12,8 @@ import {DeployImpl} from '../scripts/01_DeployStkAbptV2Impl.sol';
 import {DeployPayload} from '../scripts/02_DeployPayload.sol';
 import {StkABPTMigrator} from '../src/contracts/StkABPTMigrator.sol';
 import {SigUtils} from './SigUtils.sol';
-import {BalancerSharedPoolPriceProvider, BPool} from '../src/contracts/lp-oracle-contracts/aggregators/BalancerSharedPoolPriceProvider.sol';
-import {BalancerV2SharedPoolPriceProvider, BVaultV2, BPoolV2} from '../src/contracts/lp-oracle-contracts/aggregators/BalancerV2SharedPoolPriceProvider.sol';
+import {BalancerSharedPoolPriceProvider, BPool} from '../src/contracts/BalancerSharedPoolPriceProvider.sol';
+import {BalancerV2SharedPoolPriceProvider, BVaultV2, BPoolV2} from '../src/contracts/BalancerV2SharedPoolPriceProvider.sol';
 import {Addresses} from '../src/libs/Addresses.sol';
 
 contract E2E is Test {
