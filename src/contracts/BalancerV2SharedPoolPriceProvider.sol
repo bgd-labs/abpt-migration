@@ -80,10 +80,10 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
   }
 
   /**
-   * Returns the token balances in Ethers by multiplying each token balance with its price in ethers.
+   * Returns the token balances in USD by multiplying each token balance with its price in usd.
    */
   function getUsdBalances() internal view returns (uint256[] memory) {
-    uint256[] memory ethBalances = new uint256[](tokens.length);
+    uint256[] memory usdBalances = new uint256[](tokens.length);
     (, uint256[] memory balances, ) = vault.getPoolTokens(poolId);
 
     for (uint256 index; index < tokens.length; index++) {
@@ -91,9 +91,9 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
       require(pi > 0, 'ERR_NO_ORACLE_PRICE');
       uint256 missingDecimals = 18 - decimals[index];
       uint256 bi = bmul(balances[index], BONE * 10 ** (missingDecimals));
-      ethBalances[index] = bmul(bi, pi);
+      usdBalances[index] = bmul(bi, pi);
     }
-    return ethBalances;
+    return usdBalances;
   }
 
   /**
@@ -117,17 +117,17 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
 
   /**
    * Returns true if there is a price deviation.
-   * @param ethTotals Balance of each token in ethers.
+   * @param usdTotals Balance of each token in usd.
    */
-  function hasDeviation(uint256[] memory ethTotals) internal view returns (bool) {
+  function hasDeviation(uint256[] memory usdTotals) internal view returns (bool) {
     //Check for a price deviation
     uint256 length = tokens.length;
     for (uint8 i = 0; i < length; i++) {
       for (uint8 o = 0; o < length; o++) {
         if (i != o) {
           uint256 price_deviation = bdiv(
-            bdiv(ethTotals[i], weights[i]),
-            bdiv(ethTotals[o], weights[o])
+            bdiv(usdTotals[i], weights[i]),
+            bdiv(usdTotals[o], weights[o])
           );
           if (
             price_deviation > (BONE + maxPriceDeviation) ||
@@ -143,47 +143,47 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
 
   /**
    * Calculates the price of the pool token using the formula of weighted arithmetic mean.
-   * @param ethTotals Balance of each token in ethers.
+   * @param usdTotals Balance of each token in usd.
    */
-  function getArithmeticMean(uint256[] memory ethTotals) internal view returns (uint256) {
-    uint256 totalEth = 0;
+  function getArithmeticMean(uint256[] memory usdTotals) internal view returns (uint256) {
+    uint256 totalUsd = 0;
     uint256 length = tokens.length;
     for (uint8 i = 0; i < length; i++) {
-      totalEth = badd(totalEth, ethTotals[i]);
+      totalUsd = badd(totalUsd, usdTotals[i]);
     }
-    return bdiv(totalEth, pool.totalSupply());
+    return bdiv(totalUsd, pool.totalSupply());
   }
 
   /**
-   * Returns the weighted token balance in ethers by calculating the balance in ether of the token to the power of its weight.
+   * Returns the weighted token balance in usd by calculating the balance in usd of the token to the power of its weight.
    * @param index Token index.
    */
-  function getWeightedEthBalanceByToken(
+  function getWeightedUsdBalanceByToken(
     uint256 index,
-    uint256 ethTotal
+    uint256 usdTotal
   ) internal view returns (uint256) {
     uint256 weight = weights[index];
-    (uint256 base, uint256 result) = getClosestBaseAndExponetation(index, ethTotal);
-    if (base == 0 || ethTotal < MAX_BPOW_BASE) {
-      if (ethTotal < MAX_BPOW_BASE) {
-        return bpowApprox(ethTotal, weight, powerPrecision);
+    (uint256 base, uint256 result) = getClosestBaseAndExponetation(index, usdTotal);
+    if (base == 0 || usdTotal < MAX_BPOW_BASE) {
+      if (usdTotal < MAX_BPOW_BASE) {
+        return bpowApprox(usdTotal, weight, powerPrecision);
       } else {
-        return bmul(ethTotal, bpowApprox(bdiv(BONE, ethTotal), (BONE - weight), powerPrecision));
+        return bmul(usdTotal, bpowApprox(bdiv(BONE, usdTotal), (BONE - weight), powerPrecision));
       }
     } else {
-      return bmul(result, bpowApprox(bdiv(ethTotal, base), weight, powerPrecision));
+      return bmul(result, bpowApprox(bdiv(usdTotal, base), weight, powerPrecision));
     }
   }
 
   /**
    * Calculates the price of the pool token using the formula of weighted geometric mean.
-   * @param ethTotals Balance of each token in ethers.
+   * @param usdTotals Balance of each token in usd.
    */
-  function getWeightedGeometricMean(uint256[] memory ethTotals) internal view returns (uint256) {
+  function getWeightedGeometricMean(uint256[] memory usdTotals) internal view returns (uint256) {
     uint256 mult = BONE;
     uint256 length = tokens.length;
     for (uint256 i = 0; i < length; i++) {
-      mult = bmul(mult, getWeightedEthBalanceByToken(i, ethTotals[i]));
+      mult = bmul(mult, getWeightedUsdBalanceByToken(i, usdTotals[i]));
     }
     return bdiv(bmul(mult, K), pool.totalSupply());
   }
@@ -248,15 +248,15 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
    * @return int256 price
    */
   function latestAnswer() external view override returns (int256) {
-    //Get token balances in ethers
-    uint256[] memory ethTotals = getUsdBalances();
+    //Get token balances in usd
+    uint256[] memory usdTotals = getUsdBalances();
 
-    if (hasDeviation(ethTotals)) {
+    if (hasDeviation(usdTotals)) {
       //Calculate the weighted geometric mean
-      return int256(getWeightedGeometricMean(ethTotals));
+      return int256(getWeightedGeometricMean(usdTotals));
     } else {
       //Calculate the weighted arithmetic mean
-      return int256(getArithmeticMean(ethTotals));
+      return int256(getArithmeticMean(usdTotals));
     }
   }
 }
