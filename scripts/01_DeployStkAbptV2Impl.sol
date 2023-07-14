@@ -13,7 +13,10 @@ import {IWeightedPool} from '../src/interfaces/IWeightedPool.sol';
 import {GenericProposal} from '../src/libs/GenericProposal.sol';
 import {Addresses} from '../src/libs/Addresses.sol';
 
-/** this contract doesn't do anything */
+/**
+ * This is an completely empty contract.
+ * It just exists to initialize Proxies with "some implementation"
+ */
 contract PlaceholderContract {
 
 }

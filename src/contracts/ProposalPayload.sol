@@ -11,7 +11,6 @@ import {DistributionTypes} from 'aave-stk-v1-5/lib/DistributionTypes.sol';
 import {IAaveDistributionManager} from 'aave-stk-v1-5/interfaces/IAaveDistributionManager.sol';
 import {Vault} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
-import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
 
 /**
  * @title StkABPTV2 Proposal
