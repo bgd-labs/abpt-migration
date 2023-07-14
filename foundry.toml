@@ -5,6 +5,7 @@ script = 'scripts'
 out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "write", path = "./reports" }, {access = "read", path = "./out"}]
+ffi = true
 
 [rpc_endpoints]
 mainnet = "${RPC_MAINNET}"

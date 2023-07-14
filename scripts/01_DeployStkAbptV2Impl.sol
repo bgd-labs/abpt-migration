@@ -13,6 +13,11 @@ import {IWeightedPool} from '../src/interfaces/IWeightedPool.sol';
 import {GenericProposal} from '../src/libs/GenericProposal.sol';
 import {Addresses} from '../src/libs/Addresses.sol';
 
+/** this contract doesn't do anything */
+contract PlaceholderContract {
+
+}
+
 /**
  * @notice Deploys a the implementation for the pool with the bricked initialize.
  */
@@ -30,7 +35,13 @@ contract DeployImpl is EthereumScript {
     );
 
     address tokenProxy = ITransparentProxyFactory(AaveMisc.TRANSPARENT_PROXY_FACTORY_ETHEREUM)
-      .createDeterministic(stkABPTV2Impl, AaveMisc.PROXY_ADMIN_ETHEREUM, bytes(''), 'ABPT_V2');
+      .createDeterministic(
+        address(new PlaceholderContract()),
+        AaveMisc.PROXY_ADMIN_ETHEREUM,
+        bytes(''),
+        'ABPT_V2'
+      );
+
     return (
       address(
         new StakedTokenV3NoCooldown(

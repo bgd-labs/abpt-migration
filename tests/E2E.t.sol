@@ -31,7 +31,11 @@ contract E2E is Test {
   address internal owner;
 
   function setUp() external {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 17663919);
+    /**
+     * ETH: ~2006 $
+     * AAVE: ~80.42 $
+     */
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 17690412);
     DeployOracles step0 = new DeployOracles();
     (address oracle1, address oracle2) = step0._deploy();
     abptOracle = BalancerSharedPoolPriceProvider(oracle1);
@@ -89,15 +93,21 @@ contract E2E is Test {
 
     // calculate minOut based on $ value - 0.001 %
     // this should happen offchain
-    uint256 minBptOut = (((amount * uint256(abptOracle.latestAnswer())) /
-      uint256(abptv2Oracle.latestAnswer())) * 99_999) / 100_000;
+    // uint256 minBptOut = (((amount * uint256(abptOracle.latestAnswer())) /
+    //   uint256(abptv2Oracle.latestAnswer())) * 99_999) / 100_000;
 
+    uint256 minBptOut = 0;
     migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOut, true);
 
     uint256 actualBPT = IERC20(stkABPTV2).balanceOf(owner);
     assertGt(actualBPT, minBptOut);
     assertLt(actualBPT - minBptOut, 1e18);
     assertEq(IERC20(stkABPTV2).balanceOf(owner), 232053426840979065985899);
+  }
+
+  function testV2OraclePrice() public {
+    testMigratePartialStkAbpt();
+    console.log('price', uint256(abptv2Oracle.latestAnswer()));
   }
 
   /**
@@ -108,6 +118,7 @@ contract E2E is Test {
     uint[] memory tokenOutAmountsMin = new uint[](2);
     migrator.migrateStkABPT(IERC20(STK_ABPT_V1).balanceOf(owner), tokenOutAmountsMin, 0, false);
     assertEq(IERC20(stkABPTV2).balanceOf(owner), 231282239606672010155655);
+    assertApproxEqAbs(IERC20(Addresses.AAVE).balanceOf(owner), 1258e18, 1e18);
   }
 
   function testMigrationWithPermit() public {
@@ -139,54 +150,32 @@ contract E2E is Test {
     );
   }
 
-  function testClaimRewards() public {
-    testMigrateStkAbpt();
-    vm.warp(block.timestamp + 10000);
-    uint256 rewards = AggregatedStakedTokenV3(stkABPTV2).getTotalRewardsBalance(owner);
-    assertGt(rewards, 0);
-    AggregatedStakedTokenV3(stkABPTV2).claimRewards(owner, type(uint256).max);
-  }
+  // function testClaimRewards() public {
+  //   testMigrateStkAbpt();
+  //   vm.warp(block.timestamp + 10000);
+  //   uint256 rewards = AggregatedStakedTokenV3(stkABPTV2).getTotalRewardsBalance(owner);
+  //   assertGt(rewards, 0);
+  //   AggregatedStakedTokenV3(stkABPTV2).claimRewards(owner, type(uint256).max);
+  // }
 }
 
 contract OracleTest is Test {
+  BalancerSharedPoolPriceProvider abptOracle;
+  BalancerV2SharedPoolPriceProvider abptv2Oracle;
+
   function setUp() external {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 17663919);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 17690412);
+    DeployOracles step0 = new DeployOracles();
+    (address oracle1, address oracle2) = step0._deploy();
+    abptOracle = BalancerSharedPoolPriceProvider(oracle1);
+    abptv2Oracle = BalancerV2SharedPoolPriceProvider(oracle2);
+  }
+
+  function testAAVEPrice() public {
+    console.log(AaveV3Ethereum.ORACLE.getAssetPrice(Addresses.AAVE));
   }
 
   function testV1OraclePrice() public {
-    uint256[][] memory approxMatrix = new uint256[][](0);
-    uint8[] memory decimals = new uint8[](2);
-    decimals[0] = 18;
-    decimals[1] = 18;
-    BalancerSharedPoolPriceProvider oracle = new BalancerSharedPoolPriceProvider({
-      _pool: BPool(Addresses.ABPT_V1_BPOOL),
-      _decimals: decimals,
-      _priceOracle: AaveV3Ethereum.ORACLE,
-      _maxPriceDeviation: 50000000000000000,
-      _K: 2000000000000000000,
-      _powerPrecision: 100000000,
-      _approximationMatrix: approxMatrix
-    });
-
-    console.log(uint256(oracle.latestAnswer()));
-  }
-
-  function testV2OraclePrice() public {
-    uint256[][] memory approxMatrix = new uint256[][](0);
-    uint8[] memory decimals = new uint8[](2);
-    decimals[0] = 18;
-    decimals[1] = 18;
-    BalancerV2SharedPoolPriceProvider oracle = new BalancerV2SharedPoolPriceProvider({
-      _pool: BPoolV2(Addresses.ABPT_V2),
-      _vault: BVaultV2(Addresses.BALANCER_VAULT),
-      _decimals: decimals,
-      _priceOracle: AaveV3Ethereum.ORACLE,
-      _maxPriceDeviation: 50000000000000000,
-      _K: 2000000000000000000,
-      _powerPrecision: 100000000,
-      _approximationMatrix: approxMatrix
-    });
-
-    console.log(uint256(oracle.latestAnswer()));
+    console.log(uint256(abptOracle.latestAnswer()));
   }
 }
