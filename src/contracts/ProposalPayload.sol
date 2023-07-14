@@ -18,10 +18,10 @@ import {Addresses} from '../libs/Addresses.sol';
  * @notice migrates emissions to a new stkABPT
  */
 contract ProposalPayload {
-  address public constant AAVE = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
-  address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-  address public constant STK_ABPT_V1 = 0xa1116930326D21fB917d5A27F1E9943A9595fb47;
-  Vault public constant VAULT = Vault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+  address public constant AAVE = Addresses.AAVE;
+  address public constant WSTETH = Addresses.WSTETH;
+  address public constant STK_ABPT_V1 = Addresses.STK_ABPT_V1;
+  Vault public constant VAULT = Vault(Addresses.BALANCER_VAULT);
 
   address public immutable STK_ABPT_V1_IMPL;
   address public immutable STK_ABPT_V2_IMPL;
