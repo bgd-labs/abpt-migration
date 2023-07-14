@@ -97,6 +97,7 @@ contract E2E is Test {
     uint256 actualBPT = IERC20(stkABPTV2).balanceOf(owner);
     assertGt(actualBPT, minBptOut);
     assertLt(actualBPT - minBptOut, 1e18);
+    assertEq(IERC20(stkABPTV2).balanceOf(owner), 232053426840979065985899);
   }
 
   /**

@@ -10,6 +10,9 @@ import {Addresses} from '../src/libs/Addresses.sol';
 contract DeployOracles is EthereumScript {
   function _deploy() public returns (address, address) {
     uint256[][] memory approxMatrix = new uint256[][](0);
+    uint256[] memory weights = new uint256[](2);
+    weights[0] = 200000000000000000;
+    weights[1] = 800000000000000000;
     uint8[] memory decimals = new uint8[](2);
     decimals[0] = 18;
     decimals[1] = 18;
