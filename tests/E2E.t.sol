@@ -35,7 +35,7 @@ contract E2E is Test {
      * ETH: ~2006 $
      * AAVE: ~80.42 $
      */
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 17690412);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 17711546);
     DeployOracles step0 = new DeployOracles();
     (address oracle1, address oracle2) = step0._deploy();
     abptOracle = BalancerSharedPoolPriceProvider(oracle1);
@@ -93,10 +93,9 @@ contract E2E is Test {
 
     // calculate minOut based on $ value - 0.001 %
     // this should happen offchain
-    // uint256 minBptOut = (((amount * uint256(abptOracle.latestAnswer())) /
-    //   uint256(abptv2Oracle.latestAnswer())) * 99_999) / 100_000;
+    uint256 minBptOut = (((amount * uint256(abptOracle.latestAnswer())) /
+      uint256(abptv2Oracle.latestAnswer())) * 99_999) / 100_000;
 
-    uint256 minBptOut = 0;
     migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOut, true);
 
     uint256 actualBPT = IERC20(stkABPTV2).balanceOf(owner);
@@ -150,13 +149,13 @@ contract E2E is Test {
     );
   }
 
-  // function testClaimRewards() public {
-  //   testMigrateStkAbpt();
-  //   vm.warp(block.timestamp + 10000);
-  //   uint256 rewards = AggregatedStakedTokenV3(stkABPTV2).getTotalRewardsBalance(owner);
-  //   assertGt(rewards, 0);
-  //   AggregatedStakedTokenV3(stkABPTV2).claimRewards(owner, type(uint256).max);
-  // }
+  function testClaimRewards() public {
+    testMigrateStkAbpt();
+    vm.warp(block.timestamp + 10000);
+    uint256 rewards = AggregatedStakedTokenV3(stkABPTV2).getTotalRewardsBalance(owner);
+    assertGt(rewards, 0);
+    AggregatedStakedTokenV3(stkABPTV2).claimRewards(owner, type(uint256).max);
+  }
 }
 
 contract OracleTest is Test {
@@ -164,7 +163,7 @@ contract OracleTest is Test {
   BalancerV2SharedPoolPriceProvider abptv2Oracle;
 
   function setUp() external {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 17690412);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 17711546);
     DeployOracles step0 = new DeployOracles();
     (address oracle1, address oracle2) = step0._deploy();
     abptOracle = BalancerSharedPoolPriceProvider(oracle1);
@@ -177,5 +176,10 @@ contract OracleTest is Test {
 
   function testV1OraclePrice() public {
     console.log(uint256(abptOracle.latestAnswer()));
+  }
+
+  // times out in that block
+  function testV2OraclePrice() public {
+    console.log(uint256(abptv2Oracle.latestAnswer()));
   }
 }
