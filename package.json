@@ -12,6 +12,7 @@
   "keywords": [],
   "author": "BGD labs",
   "license": "MIT",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/bgd-labs/bgd-forge-template/issues"
   },
