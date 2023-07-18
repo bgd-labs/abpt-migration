@@ -6,6 +6,7 @@ import '../interfaces/BPoolV2.sol';
 import '../interfaces/BVaultV2.sol';
 import '../interfaces/IExtendedAggregator.sol';
 import '../misc/BNum.sol';
+import '../libs/LogExpMath.sol';
 
 /** @title BalancerV2SharedPoolPriceProvider
  * @notice Price provider for a balancer pool token
@@ -23,8 +24,6 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
   IAaveOracle public priceOracle;
   uint256 public immutable maxPriceDeviation;
   uint256 internal immutable K;
-  uint256 internal immutable powerPrecision;
-  uint256[][] internal approximationMatrix;
 
   /**
    * BalancerSharedPoolPriceProvider constructor.
@@ -33,8 +32,6 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
    * @param _priceOracle Aave price oracle.
    * @param _maxPriceDeviation Threshold of spot prices deviation: 10ˆ16 represents a 1% deviation.
    * @param _K //Constant K = 1 / (w1ˆw1 * .. * wn^wn)
-   * @param _powerPrecision //Precision for power math function.
-   * @param _approximationMatrix //Approximation matrix for gas optimization.
    */
   constructor(
     BPoolV2 _pool,
@@ -42,9 +39,7 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
     uint8[] memory _decimals,
     IAaveOracle _priceOracle,
     uint256 _maxPriceDeviation,
-    uint256 _K,
-    uint256 _powerPrecision,
-    uint256[][] memory _approximationMatrix
+    uint256 _K
   ) {
     pool = _pool;
     vault = _vault;
@@ -59,12 +54,7 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
     for (uint8 i = 0; i < length; i++) {
       require(_decimals[i] <= 18, 'ERR_INVALID_DECIMALS');
     }
-    require(
-      _approximationMatrix.length == 0 || _approximationMatrix[0].length == length + 1,
-      'ERR_INVALID_APPROX_MATRIX'
-    );
     require(_maxPriceDeviation < BONE, 'ERR_INVALID_PRICE_DEVIATION');
-    require(_powerPrecision >= 1 && _powerPrecision <= BONE, 'ERR_INVALID_POWER_PRECISION');
     require(address(_priceOracle) != address(0), 'ERR_INVALID_PRICE_PROVIDER');
     // Get token normalized weights
     uint256[] memory _weights = _pool.getNormalizedWeights();
@@ -75,8 +65,6 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
     priceOracle = _priceOracle;
     maxPriceDeviation = _maxPriceDeviation;
     K = _K;
-    powerPrecision = _powerPrecision;
-    approximationMatrix = _approximationMatrix;
   }
 
   /**
@@ -94,25 +82,6 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
       usdBalances[index] = bmul(bi, pi);
     }
     return usdBalances;
-  }
-
-  /**
-   * Using the matrix approximation, returns a near base and exponentiation result, for num ^ weights[index]
-   * @param index Token index.
-   * @param num Base to approximate.
-   */
-  function getClosestBaseAndExponetation(
-    uint256 index,
-    uint256 num
-  ) internal view returns (uint256, uint256) {
-    uint256 length = approximationMatrix.length;
-    uint256 k = index + 1;
-    for (uint8 i = 0; i < length; i++) {
-      if (approximationMatrix[i][0] >= num) {
-        return (approximationMatrix[i][0], approximationMatrix[i][k]);
-      }
-    }
-    return (0, 0);
   }
 
   /**
@@ -163,16 +132,7 @@ contract BalancerV2SharedPoolPriceProvider is BNum, IExtendedAggregator {
     uint256 usdTotal
   ) internal view returns (uint256) {
     uint256 weight = weights[index];
-    (uint256 base, uint256 result) = getClosestBaseAndExponetation(index, usdTotal);
-    if (base == 0 || usdTotal < MAX_BPOW_BASE) {
-      if (usdTotal < MAX_BPOW_BASE) {
-        return bpowApprox(usdTotal, weight, powerPrecision);
-      } else {
-        return bmul(usdTotal, bpowApprox(bdiv(BONE, usdTotal), (BONE - weight), powerPrecision));
-      }
-    } else {
-      return bmul(result, bpowApprox(bdiv(usdTotal, base), weight, powerPrecision));
-    }
+    return LogExpMath.pow(usdTotal, weight);
   }
 
   /**
