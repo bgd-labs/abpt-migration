@@ -1,36 +1,20 @@
-const Big = require("bignumber.js");
 const Decimal = require("decimal.js");
 const { encodeAbiParameters } = require("viem");
 
-function* createWeightMatrix(base, end, step, weights) {
-  for (let i = base; i <= end; i += step) {
-    yield [i, ...weights.map((w) => Math.pow(base, w))];
-  }
-}
-
-function* createWeightMatrixLog(base, count, logStep, weights) {
-  let currentBase = base;
-  for (let i = 0; i < count; i++) {
-    yield [
-      new Big(currentBase).times(new Big(10).pow(18)).toFixed(0),
-      ...weights.map((w) =>
-        new Big(Math.pow(currentBase, w) * 10 ** 18).toFixed(0)
-      ),
-    ];
-    currentBase = currentBase * Math.pow(base, logStep);
-  }
-}
-
-function toList(gen) {
-  let l = [];
-  for (let x of gen) {
-    l.push(x);
-  }
-  return l;
-}
-
 const weights = [0.2, 0.8];
 const ether = "1000000000000000000";
+
+function createMatrix(weights, steps) {
+  let matrix = [];
+  for (let i = 1; i <= steps; i++) {
+    matrix.push([
+      new Decimal(10).pow(i).times(ether).toFixed(0),
+      new Decimal(10).pow(i).pow(weights[0]).times(ether).toFixed(0),
+      new Decimal(10).pow(i).pow(weights[1]).times(ether).toFixed(0),
+    ]);
+  }
+  return matrix;
+}
 
 function weightsToK(weights) {
   const factor1 = new Decimal(weights[0]).pow(weights[0]);
@@ -42,7 +26,7 @@ function weightsToK(weights) {
 
 const result = encodeAbiParameters(
   [{ type: "uint256[][]" }, { type: "uint256" }],
-  [toList(createWeightMatrixLog(1, 29, 1, weights)), weightsToK(weights)]
+  [createMatrix(weights, 20), weightsToK(weights)]
 );
 
 console.log(result);
