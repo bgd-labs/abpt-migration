@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
 import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AggregatorInterface} from 'aave-address-book/AaveV3.sol';
 import {ILido} from '../interfaces/ILido.sol';
@@ -9,13 +10,14 @@ import {IWstETH} from '../interfaces/IWstETH.sol';
 import {Vault, BPool, BalancerPool, ERC20} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
 import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
+import {Rescuable} from 'solidity-utils/contracts/utils/Rescuable.sol';
 
 /**
  * @title StkABPTMigrator
  * @author BGD Labs
  * @notice allows migration from abptv1 to abptv2
  */
-contract StkABPTMigrator {
+contract StkABPTMigrator is Rescuable {
   address public immutable STK_ABPT_V2;
 
   constructor(address stkABPTV2) {
@@ -34,6 +36,13 @@ contract StkABPTMigrator {
    * @dev Needed as token will unwrap WETH to ETH, before wrapping into stETH & wstETH
    */
   receive() external payable {}
+
+  /**
+   * allow the short executor to rescue tokens
+   */
+  function whoCanRescue() public pure override returns (address) {
+    return AaveGovernanceV2.SHORT_EXECUTOR;
+  }
 
   /**
    * migration via approval flow
