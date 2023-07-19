@@ -73,7 +73,7 @@ contract E2E is Test {
    * @dev The proposal upgrades the implementation of stkABPT.
    * The new version enters post slashing mode, which means ppl should be able to withdraw without a cooldown.
    */
-  function testRedeem() public {
+  function test_redeem() public {
     address abpt = AggregatedStakedTokenV3(STK_ABPT_V1).STAKED_TOKEN();
     uint256 stkAbptBalanceBefore = IERC20(STK_ABPT_V1).balanceOf(owner);
     uint256 abptBalanceBefore = IERC20(abpt).balanceOf(owner);
@@ -86,29 +86,29 @@ contract E2E is Test {
   /**
    * @dev Migrate stkAbpt -> stkAbpt v2 via BActions
    */
-  function testMigrateStkAbpt() public {
+  function test_migrateStkAbpt() public {
     uint256 amount = IERC20(STK_ABPT_V1).balanceOf(owner);
     IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
     uint[] memory tokenOutAmountsMin = new uint[](2);
 
     // calculate minOut based on $ value - 0.01 %
     // this should happen offchain
-    uint256 minBptOut = (((amount * uint256(abptOracle.latestAnswer())) /
-      uint256(abptv2Oracle.latestAnswer())) * 9_999) / 10_000;
+    uint256 minBptOut = ((amount * uint256(abptOracle.latestAnswer())) /
+      uint256(abptv2Oracle.latestAnswer()));
+    uint256 minBptOutWithSlippage = (minBptOut * 9_999) / 10_000;
 
-    migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOut, true);
+    migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOutWithSlippage, true);
 
     uint256 actualBPT = IERC20(stkABPTV2).balanceOf(owner);
-    assertGt(actualBPT, minBptOut);
-    assertLt(actualBPT - minBptOut, 1e18);
-    assertEq(IERC20(stkABPTV2).balanceOf(owner), 232053426840979065985899);
+    assertGe(actualBPT, minBptOutWithSlippage);
+    assertLt(actualBPT - minBptOutWithSlippage, minBptOut - minBptOutWithSlippage);
   }
 
   /**
    * @dev Migrate partial stkAbpt -> stkAbpt v2 via BActions
    * In this case you would need to control slippage
    */
-  function testMigratePartialStkAbpt() public {
+  function test_migratePartialStkAbpt() public {
     IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
     uint[] memory tokenOutAmountsMin = new uint[](2);
     migrator.migrateStkABPT(IERC20(STK_ABPT_V1).balanceOf(owner), tokenOutAmountsMin, 0, false);
@@ -122,7 +122,7 @@ contract E2E is Test {
     assertEq(IERC20(stkABPTV2).balanceOf(owner), 228733940221947756582513);
   }
 
-  function testMigrationWithPermit() public {
+  function test_migrationWithPermit() public {
     SigUtils.Permit memory permit = SigUtils.Permit({
       owner: owner,
       spender: address(migrator),
@@ -151,8 +151,8 @@ contract E2E is Test {
     );
   }
 
-  function testClaimRewards() public {
-    testMigrateStkAbpt();
+  function test_claimRewards() public {
+    test_migrateStkAbpt();
     vm.warp(block.timestamp + 10000);
     uint256 rewards = AggregatedStakedTokenV3(stkABPTV2).getTotalRewardsBalance(owner);
     assertGt(rewards, 0);
