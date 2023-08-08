@@ -9,7 +9,7 @@ import {IWeth} from '../interfaces/IWeth.sol';
 import {IWstETH} from '../interfaces/IWstETH.sol';
 import {Vault, BPool, BalancerPool, ERC20} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
-import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
+import {AggregatedStakedTokenV3} from 'aave-stk-gov-v3/interfaces/AggregatedStakedTokenV3.sol';
 import {Rescuable} from 'solidity-utils/contracts/utils/Rescuable.sol';
 
 /**

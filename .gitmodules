@@ -7,10 +7,6 @@
 [submodule "lib/aave-helpers"]
 	path = lib/aave-helpers
 	url = https://github.com/bgd-labs/aave-helpers
-[submodule "lib/aave-stk-v1-5"]
-	path = lib/aave-stk-v1-5
-	url = https://github.com/bgd-labs/aave-stk-v1-5
-  branch = feat/abpt-v2-pool
 [submodule "lib/solidity-utils"]
 	path = lib/solidity-utils
 	url = https://github.com/bgd-labs/solidity-utils
@@ -18,3 +14,6 @@
 	path = lib/stk-no-cooldown
 	url = https://github.com/bgd-labs/aave-stk-v1-5
   branch = feat/post-slashing
+[submodule "lib/aave-stk-gov-v3"]
+	path = lib/aave-stk-gov-v3
+	url = https://github.com/bgd-labs/aave-stk-gov-v3
