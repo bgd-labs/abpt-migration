@@ -27,10 +27,15 @@ diff-all :
 # Demo deploynebt - no-cooldown
 	make download chain=sepolia address=0xd1B3E25fD7C8AE7CADDC6F71b461b79CD4ddcFa3
 	npm run lint:fix
-	make git-diff before=src/etherscan/mainnet_0x9921c8cea5815364d0f8350e6cbe9042A92448c9 after=src/etherscan/sepolia_0x70Bf6EC6Fca41a7d08dCBB9909985AC0A4510B5E out=NewVersionDiff
-	make git-diff before=src/etherscan/mainnet_0x9921c8cea5815364d0f8350e6cbe9042A92448c9 after=src/etherscan/sepolia_0xd1B3E25fD7C8AE7CADDC6F71b461b79CD4ddcFa3 out=NoCooldownDiff
+	make git-diff before=src/etherscan/mainnet_0x9921c8cea5815364d0f8350e6cbe9042A92448c9 after=src/etherscan/sepolia_0x70Bf6EC6Fca41a7d08dCBB9909985AC0A4510B5E out=NewVersion_Diff
+	make git-diff before=src/etherscan/mainnet_0x9921c8cea5815364d0f8350e6cbe9042A92448c9 after=src/etherscan/sepolia_0xd1B3E25fD7C8AE7CADDC6F71b461b79CD4ddcFa3 out=NoCooldown_Diff
 
 diff-snapshot :
-	forge inspect src/etherscan/mainnet_0x9921c8cea5815364d0f8350e6cbe9042A92448c9/StakedTokenV3/src/contracts/StakedTokenV3.sol:StakedTokenV3 storage-layout --pretty > diffs/currentStakedToken.md
-	forge inspect src/etherscan/sepolia_0x70Bf6EC6Fca41a7d08dCBB9909985AC0A4510B5E/StakedTokenV3/src/contracts/StakedTokenV3.sol:StakedTokenV3 storage-layout --pretty > diffs/newStakedToken.md
-	forge inspect src/etherscan/sepolia_0xd1B3E25fD7C8AE7CADDC6F71b461b79CD4ddcFa3/StakedTokenV3/src/contracts/StakedTokenV3.sol:StakedTokenV3 storage-layout --pretty > diffs/zeroCooldownStakedToken.md
+	forge inspect src/etherscan/mainnet_0x9921c8cea5815364d0f8350e6cbe9042A92448c9/StakedTokenV3/src/contracts/StakedTokenV3.sol:StakedTokenV3 storage-layout --pretty > reports/currentStakedToken.md
+	npm run clean-storage-report currentStakedToken
+	forge inspect src/etherscan/sepolia_0x70Bf6EC6Fca41a7d08dCBB9909985AC0A4510B5E/StakedTokenV3/lib/aave-stk-gov-v3/src/contracts/StakedTokenV3.sol:StakedTokenV3 storage-layout --pretty > reports/newStakedToken.md
+	npm run clean-storage-report newStakedToken
+	forge inspect src/etherscan/sepolia_0xd1B3E25fD7C8AE7CADDC6F71b461b79CD4ddcFa3/StakedTokenV3/lib/stk-no-cooldown/src/contracts/StakedTokenV3.sol:StakedTokenV3 storage-layout --pretty > reports/noCooldownStakedToken.md
+	npm run clean-storage-report noCooldownStakedToken
+	make git-diff before=reports/currentStakedToken.md after=reports/newStakedToken.md out=NewVersion_storageDiff.md
+	make git-diff before=reports/currentStakedToken.md after=reports/noCooldownStakedToken.md out=NoCooldown_storageDiff.md

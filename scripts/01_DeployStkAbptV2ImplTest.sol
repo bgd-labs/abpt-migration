@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {AaveMisc} from 'aave-address-book/AaveMisc.sol';
 import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
 import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
-import {SepoliaScript} from 'aave-helpers/ScriptUtils.sol';
+import {EthereumScript} from 'aave-helpers/ScriptUtils.sol';
 import {StakedTokenV3 as StakedTokenV3NoCooldown, IERC20 as IERC20NoCooldown} from 'stk-no-cooldown/contracts/StakedTokenV3.sol';
 import {StakedTokenV3} from 'aave-stk-gov-v3/contracts/StakedTokenV3.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
@@ -24,7 +24,7 @@ contract PlaceholderContract {
 /**
  * @notice Deploys a the implementation for the pool with the bricked initialize.
  */
-contract DeployImpl is SepoliaScript {
+contract DeployImpl is EthereumScript {
   function _deploy() public returns (address, address, address) {
     address stkABPTV2Impl = address(
       new StakedTokenV3(
