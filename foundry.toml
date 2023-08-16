@@ -16,6 +16,7 @@ arbitrum = "${RPC_ARBITRUM}"
 fantom = "${RPC_FANTOM}"
 harmony = "${RPC_HARMONY}"
 metis = "${RPC_METIS}"
+sepolia = "${RPC_SEPOLIA}"
 
 [etherscan]
 mainnet = { key="${ETHERSCAN_API_KEY_MAINNET}", chainId=1 }
@@ -25,5 +26,6 @@ polygon = { key="${ETHERSCAN_API_KEY_POLYGON}", chainId=137 }
 arbitrum = { key="${ETHERSCAN_API_KEY_ARBITRUM}", chainId=42161 }
 fantom = { key="${ETHERSCAN_API_KEY_FANTOM}", chainId=250 }
 metis = { key="any", chainId=1088, url='https://andromeda-explorer.metis.io/' }
+sepolia = { key="${ETHERSCAN_API_KEY_MAINNET}", chainId=11155111 }
 
 # See more config options https://github.com/gakonst/foundry/tree/master/config
