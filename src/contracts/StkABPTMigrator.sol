@@ -53,8 +53,8 @@ contract StkABPTMigrator is Rescuable {
    */
   function migrateStkABPT(
     uint256 amount,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin,
     bool all
   ) external {
     _migrate(amount, tokenOutAmountsMin, poolOutAmountMin, all);
@@ -74,8 +74,8 @@ contract StkABPTMigrator is Rescuable {
     uint8 v,
     bytes32 r,
     bytes32 s,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin,
     bool all
   ) external {
     AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).permit(
@@ -92,8 +92,8 @@ contract StkABPTMigrator is Rescuable {
 
   function _migrate(
     uint256 amount,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin,
     bool all
   ) internal {
     AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).transferFrom(msg.sender, address(this), amount);
@@ -118,9 +118,9 @@ contract StkABPTMigrator is Rescuable {
   }
 
   function _migrateProportionally(
-    uint poolInAmount,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin
+    uint256 poolInAmount,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin
   ) internal {
     // Exit v1 pool
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
@@ -131,17 +131,17 @@ contract StkABPTMigrator is Rescuable {
     // Calculate amounts for even join
     // 1) find the lowest UserBalance-to-PoolBalance ratio
     // 2) multiply by this ratio to get in amounts
-    uint lowestRatio = type(uint256).max;
-    uint lowestRatioToken = 0;
+    uint256 lowestRatio = type(uint256).max;
+    uint256 lowestRatioToken = 0;
 
-    for (uint i = 0; i < outTokens.length; ++i) {
-      uint ratio = (1 ether * ERC20(outTokens[i]).balanceOf(address(this))) / tokenInAmounts[i];
+    for (uint256 i = 0; i < outTokens.length; ++i) {
+      uint256 ratio = (1 ether * ERC20(outTokens[i]).balanceOf(address(this))) / tokenInAmounts[i];
       if (ratio < lowestRatio) {
         lowestRatio = ratio;
         lowestRatioToken = i;
       }
     }
-    for (uint i = 0; i < outTokens.length; ++i) {
+    for (uint256 i = 0; i < outTokens.length; ++i) {
       // Keep original amount for "bottleneck" token to avoid dust
       if (lowestRatioToken == i) {
         tokenInAmounts[i] = ERC20(outTokens[i]).balanceOf(address(this));
@@ -168,7 +168,7 @@ contract StkABPTMigrator is Rescuable {
       request
     );
     // Send "change" back
-    for (uint i = 0; i < outTokens.length; i++) {
+    for (uint256 i = 0; i < outTokens.length; i++) {
       ERC20 token = ERC20(outTokens[i]);
       if (token.balanceOf(address(this)) > 0) {
         require(token.transfer(msg.sender, token.balanceOf(address(this))), 'ERR_TRANSFER_FAILED');
@@ -177,9 +177,9 @@ contract StkABPTMigrator is Rescuable {
   }
 
   function _migrateAll(
-    uint poolInAmount,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin
+    uint256 poolInAmount,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin
   ) internal {
     // Exit v1 pool
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
@@ -188,8 +188,8 @@ contract StkABPTMigrator is Rescuable {
     address[] memory outTokens = new address[](2);
     outTokens[0] = Addresses.WSTETH;
     outTokens[1] = Addresses.AAVE;
-    uint[] memory tokenInAmounts = new uint[](outTokens.length);
-    for (uint i = 0; i < outTokens.length; ++i) {
+    uint256[] memory tokenInAmounts = new uint[](outTokens.length);
+    for (uint256 i = 0; i < outTokens.length; ++i) {
       tokenInAmounts[i] = ERC20(outTokens[i]).balanceOf(address(this));
     }
 
@@ -224,7 +224,7 @@ contract StkABPTMigrator is Rescuable {
 
   // --- Internals ---FrÃ©land, 68240, Franceranrupt
 
-  function _safeApprove(ERC20 token, address spender, uint amount) internal {
+  function _safeApprove(ERC20 token, address spender, uint256 amount) internal {
     if (token.allowance(address(this), spender) > 0) {
       token.approve(spender, 0);
     }
