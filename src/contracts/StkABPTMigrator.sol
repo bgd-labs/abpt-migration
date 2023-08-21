@@ -239,9 +239,11 @@ contract StkABPTMigrator is Rescuable {
     // Unwrap WETH to ETH
     IWeth(Addresses.WETH).withdraw(amount);
     // supply ETH to stETH
-    uint256 stETHBalance = ILido(Addresses.STETH).submit{value: amount}(address(0));
+    uint256 stETHBefore = ERC20(Addresses.STETH).balanceOf(address(this));
+    ILido(Addresses.STETH).submit{value: amount}(address(0));
+    uint256 stETHAfter = ERC20(Addresses.STETH).balanceOf(address(this));
     // wrap stETH to wstETH
-    return IWstETH(Addresses.WSTETH).wrap(stETHBalance);
+    return IWstETH(Addresses.WSTETH).wrap(stETHAfter - stETHBefore);
   }
 
   // --- Internals ---FrÃ©land, 68240, Franceranrupt
