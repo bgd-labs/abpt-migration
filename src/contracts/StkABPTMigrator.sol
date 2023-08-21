@@ -68,7 +68,6 @@ contract StkABPTMigrator is Rescuable {
    * @param all if true, will migrate all AAVE/WETH. If false will migrate proportionally and send the leftovers to your address.
    */
   function migrateStkABPTWithPermit(
-    address from,
     uint256 amount,
     uint256 deadline,
     uint8 v,
@@ -79,7 +78,7 @@ contract StkABPTMigrator is Rescuable {
     bool all
   ) external {
     AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).permit(
-      from,
+      msg.sender,
       address(this),
       amount,
       deadline,

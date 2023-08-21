@@ -139,7 +139,6 @@ contract E2E is Test {
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
     uint[] memory tokenOutAmountsMin = new uint[](2);
     migrator.migrateStkABPTWithPermit(
-      permit.owner,
       permit.value,
       permit.deadline,
       v,
