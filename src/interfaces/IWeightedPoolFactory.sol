@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {IERC20} from 'aave-stk-v1-5/interfaces/IERC20.sol';
+import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {IRateProvider} from './IRateProvider.sol';
 
 interface IWeightedPoolFactory {

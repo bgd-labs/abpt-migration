@@ -9,7 +9,7 @@ import {IWeth} from '../interfaces/IWeth.sol';
 import {IWstETH} from '../interfaces/IWstETH.sol';
 import {Vault, BPool, BalancerPool, ERC20} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
-import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
+import {AggregatedStakedTokenV3} from 'aave-stk-gov-v3/interfaces/AggregatedStakedTokenV3.sol';
 import {Rescuable} from 'solidity-utils/contracts/utils/Rescuable.sol';
 
 /**
@@ -53,8 +53,8 @@ contract StkABPTMigrator is Rescuable {
    */
   function migrateStkABPT(
     uint256 amount,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin,
     bool all
   ) external {
     _migrate(amount, tokenOutAmountsMin, poolOutAmountMin, all);
@@ -68,18 +68,17 @@ contract StkABPTMigrator is Rescuable {
    * @param all if true, will migrate all AAVE/WETH. If false will migrate proportionally and send the leftovers to your address.
    */
   function migrateStkABPTWithPermit(
-    address from,
     uint256 amount,
     uint256 deadline,
     uint8 v,
     bytes32 r,
     bytes32 s,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin,
     bool all
   ) external {
     AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).permit(
-      from,
+      msg.sender,
       address(this),
       amount,
       deadline,
@@ -92,8 +91,8 @@ contract StkABPTMigrator is Rescuable {
 
   function _migrate(
     uint256 amount,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin,
     bool all
   ) internal {
     AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).transferFrom(msg.sender, address(this), amount);
@@ -118,46 +117,57 @@ contract StkABPTMigrator is Rescuable {
   }
 
   function _migrateProportionally(
-    uint poolInAmount,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin
+    uint256 poolInAmount,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin
   ) internal {
     // Exit v1 pool
+    uint256 wethBalanceBefore = ERC20(Addresses.WETH).balanceOf(address(this));
+    uint256 aaveBalanceBefore = ERC20(Addresses.AAVE).balanceOf(address(this));
+    uint256 wstETHBalanceBefore = ERC20(Addresses.WSTETH).balanceOf(address(this));
+
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
-    (address[] memory outTokens, uint[] memory tokenInAmounts, ) = Vault(Addresses.BALANCER_VAULT)
+    uint256 wethBalanceAfter = ERC20(Addresses.WETH).balanceOf(address(this));
+    uint256 aaveBalanceAfter = ERC20(Addresses.AAVE).balanceOf(address(this));
+
+    (address[] memory outTokens, uint256[] memory balances, ) = Vault(Addresses.BALANCER_VAULT)
       .getPoolTokens(Addresses.ABPT_V2_ID);
     // migrate weth to wstETH
-    _wethToWesth();
+    require(outTokens[0] == Addresses.WSTETH);
+    require(outTokens[1] == Addresses.AAVE);
+    uint256[] memory tokenInAmounts = new uint256[](outTokens.length);
+    tokenInAmounts[0] = _wethToWesth(wethBalanceAfter - wethBalanceBefore);
+    tokenInAmounts[1] = aaveBalanceAfter - aaveBalanceBefore;
     // Calculate amounts for even join
     // 1) find the lowest UserBalance-to-PoolBalance ratio
     // 2) multiply by this ratio to get in amounts
-    uint lowestRatio = type(uint256).max;
-    uint lowestRatioToken = 0;
+    uint256 lowestRatio = type(uint256).max;
+    uint256 lowestRatioToken = 0;
 
-    for (uint i = 0; i < outTokens.length; ++i) {
-      uint ratio = (1 ether * ERC20(outTokens[i]).balanceOf(address(this))) / tokenInAmounts[i];
+    for (uint256 i = 0; i < outTokens.length; ++i) {
+      uint256 ratio = (1 ether * tokenInAmounts[i]) / balances[i];
       if (ratio < lowestRatio) {
         lowestRatio = ratio;
         lowestRatioToken = i;
       }
     }
-    for (uint i = 0; i < outTokens.length; ++i) {
+    for (uint256 i = 0; i < outTokens.length; ++i) {
       // Keep original amount for "bottleneck" token to avoid dust
       if (lowestRatioToken == i) {
-        tokenInAmounts[i] = ERC20(outTokens[i]).balanceOf(address(this));
+        balances[i] = tokenInAmounts[i];
       } else {
-        tokenInAmounts[i] = (tokenInAmounts[i] * lowestRatio) / 1 ether;
+        balances[i] = (balances[i] * lowestRatio) / 1 ether;
       }
     }
     // Join v2 pool and transfer v2 BPTs to user
     bytes memory userData = abi.encode(
       BalancerPool.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT,
-      tokenInAmounts,
+      balances,
       poolOutAmountMin
     );
     Vault.JoinPoolRequest memory request = Vault.JoinPoolRequest(
       outTokens,
-      tokenInAmounts,
+      balances,
       userData,
       false
     );
@@ -168,30 +178,43 @@ contract StkABPTMigrator is Rescuable {
       request
     );
     // Send "change" back
-    for (uint i = 0; i < outTokens.length; i++) {
-      ERC20 token = ERC20(outTokens[i]);
-      if (token.balanceOf(address(this)) > 0) {
-        require(token.transfer(msg.sender, token.balanceOf(address(this))), 'ERR_TRANSFER_FAILED');
-      }
+    uint256 finalAaveBalance = ERC20(Addresses.AAVE).balanceOf(address(this));
+    if (finalAaveBalance > aaveBalanceBefore) {
+      require(
+        ERC20(Addresses.AAVE).transfer(msg.sender, finalAaveBalance - aaveBalanceBefore),
+        'ERR_TRANSFER_FAILED'
+      );
+    }
+    uint256 finalWstETHBalance = ERC20(Addresses.WSTETH).balanceOf(address(this));
+    if (finalWstETHBalance > wstETHBalanceBefore) {
+      require(
+        ERC20(Addresses.WSTETH).transfer(msg.sender, finalWstETHBalance - wstETHBalanceBefore),
+        'ERR_TRANSFER_FAILED'
+      );
     }
   }
 
   function _migrateAll(
-    uint poolInAmount,
-    uint[] calldata tokenOutAmountsMin,
-    uint poolOutAmountMin
+    uint256 poolInAmount,
+    uint256[] calldata tokenOutAmountsMin,
+    uint256 poolOutAmountMin
   ) internal {
     // Exit v1 pool
+    uint256 wethBalanceBefore = ERC20(Addresses.WETH).balanceOf(address(this));
+    uint256 aaveBalanceBefore = ERC20(Addresses.AAVE).balanceOf(address(this));
+
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
-    _wethToWesth();
+
+    uint256 wethBalanceAfter = ERC20(Addresses.WETH).balanceOf(address(this));
+    uint256 aaveBalanceAfter = ERC20(Addresses.AAVE).balanceOf(address(this));
+
     // Join v2 pool and transfer v2 BPTs to user
     address[] memory outTokens = new address[](2);
     outTokens[0] = Addresses.WSTETH;
     outTokens[1] = Addresses.AAVE;
-    uint[] memory tokenInAmounts = new uint[](outTokens.length);
-    for (uint i = 0; i < outTokens.length; ++i) {
-      tokenInAmounts[i] = ERC20(outTokens[i]).balanceOf(address(this));
-    }
+    uint256[] memory tokenInAmounts = new uint[](outTokens.length);
+    tokenInAmounts[0] = _wethToWesth(wethBalanceAfter - wethBalanceBefore);
+    tokenInAmounts[1] = aaveBalanceAfter - aaveBalanceBefore;
 
     bytes memory userData = abi.encode(
       BalancerPool.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT,
@@ -212,19 +235,20 @@ contract StkABPTMigrator is Rescuable {
     );
   }
 
-  function _wethToWesth() internal {
+  function _wethToWesth(uint256 amount) internal returns (uint256) {
     // Unwrap WETH to ETH
-    uint256 wethBalance = ERC20(Addresses.WETH).balanceOf(address(this));
-    IWeth(Addresses.WETH).withdraw(wethBalance);
+    IWeth(Addresses.WETH).withdraw(amount);
     // supply ETH to stETH
-    ILido(Addresses.STETH).submit{value: wethBalance}(address(0));
+    uint256 stETHBefore = ERC20(Addresses.STETH).balanceOf(address(this));
+    ILido(Addresses.STETH).submit{value: amount}(address(0));
+    uint256 stETHAfter = ERC20(Addresses.STETH).balanceOf(address(this));
     // wrap stETH to wstETH
-    IWstETH(Addresses.WSTETH).wrap(ERC20(Addresses.STETH).balanceOf(address(this)));
+    return IWstETH(Addresses.WSTETH).wrap(stETHAfter - stETHBefore);
   }
 
   // --- Internals ---FrÃ©land, 68240, Franceranrupt
 
-  function _safeApprove(ERC20 token, address spender, uint amount) internal {
+  function _safeApprove(ERC20 token, address spender, uint256 amount) internal {
     if (token.allowance(address(this), spender) > 0) {
       token.approve(spender, 0);
     }

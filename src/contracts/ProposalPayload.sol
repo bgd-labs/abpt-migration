@@ -5,8 +5,8 @@ import {AaveMisc} from 'aave-address-book/AaveMisc.sol';
 import {ProxyAdmin} from 'solidity-utils/contracts/transparent-proxy/ProxyAdmin.sol';
 import {TransparentUpgradeableProxy} from 'solidity-utils/contracts/transparent-proxy/TransparentUpgradeableProxy.sol';
 import {GenericProposal} from '../libs/GenericProposal.sol';
-import {DistributionTypes} from 'aave-stk-v1-5/lib/DistributionTypes.sol';
-import {IAaveDistributionManager} from 'aave-stk-v1-5/interfaces/IAaveDistributionManager.sol';
+import {DistributionTypes} from 'aave-stk-gov-v3/lib/DistributionTypes.sol';
+import {IAaveDistributionManager} from 'aave-stk-gov-v3/interfaces/IAaveDistributionManager.sol';
 import {Vault} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
 

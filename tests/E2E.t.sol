@@ -5,8 +5,8 @@ import 'forge-std/Test.sol';
 import {GovHelpers} from 'aave-helpers/GovHelpers.sol';
 import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
 import {AaveV3Ethereum, AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
-import {AggregatedStakedTokenV3} from 'aave-stk-v1-5/interfaces/AggregatedStakedTokenV3.sol';
-import {IERC20} from 'aave-stk-v1-5/interfaces/IERC20.sol';
+import {AggregatedStakedTokenV3} from 'aave-stk-gov-v3/interfaces/AggregatedStakedTokenV3.sol';
+import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {DeployOracles} from '../scripts/00_PriceOracles.s.sol';
 import {DeployImpl} from '../scripts/01_DeployStkAbptV2Impl.sol';
 import {DeployPayload} from '../scripts/02_DeployPayload.sol';
@@ -139,7 +139,6 @@ contract E2E is Test {
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
     uint[] memory tokenOutAmountsMin = new uint[](2);
     migrator.migrateStkABPTWithPermit(
-      permit.owner,
       permit.value,
       permit.deadline,
       v,
