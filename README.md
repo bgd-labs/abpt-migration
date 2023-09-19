@@ -81,3 +81,6 @@ forge install
 ```sh
 forge test
 ```
+
+### License
+Copyright © 2023, [BGD Labs](https://bgdlabs.com/). Released under the [MIT License](./LICENSE).
