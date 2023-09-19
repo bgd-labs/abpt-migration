@@ -64,6 +64,15 @@ The payload does multiple actions:
 3. create the nem stkabptv2 sm
 4. start liquidity incentives on stkabptv2
 
+## Diffs
+
+This repository also contains storage and code diffs of the affected contracts:
+
+- [StkABPTv2 vs StkAbptV1 code](./diffs/NewVersion_Diff.md)
+- [StkABPTv2 vs StkAbptV1 storage](./diffs/NewVersion_storageDiff.md)
+- [StkABPTv1Upgrade vs StkAbptV1 code](./diffs/NoCooldown_Diff.md)
+- [StkABPTv1Upgrade vs StkAbptV1 storage](./diffs/NoCooldown_storageDiff.md.md)
+
 ## Development
 
 This project uses [Foundry](https://getfoundry.sh). See the [book](https://book.getfoundry.sh/getting-started/installation.html) for detailed instructions on how to install and use Foundry.
