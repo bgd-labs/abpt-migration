@@ -36,7 +36,7 @@ contract ProposalPayload {
     DistributionTypes.AssetConfigInput[]
       memory disableConfigs = new DistributionTypes.AssetConfigInput[](1);
     disableConfigs[0] = DistributionTypes.AssetConfigInput({
-      emissionPerSecond: 0, // same as current
+      emissionPerSecond: 0,
       totalStaked: 0, // it's overwritten internally
       underlyingAsset: STK_ABPT_V1
     });
