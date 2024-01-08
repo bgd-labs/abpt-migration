@@ -14,7 +14,6 @@
 	path = lib/stk-no-cooldown
 	url = https://github.com/bgd-labs/aave-stk-v1-5
   branch = feat/post-slashing
-[submodule "lib/aave-stk-gov-v3"]
-	path = lib/aave-stk-gov-v3
-	url = https://github.com/bgd-labs/aave-stk-gov-v3
-    branch = feat/new-deployment
+[submodule "lib/stake-token"]
+	path = lib/stake-token
+	url = https://github.com/bgd-labs/stake-token

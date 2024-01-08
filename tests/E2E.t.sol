@@ -35,11 +35,11 @@ contract E2E is Test {
      * ETH: ~2006 $
      * AAVE: ~80.42 $
      */
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 17711546);
-    DeployOracles step0 = new DeployOracles();
-    (address oracle1, address oracle2) = step0._deploy();
-    abptOracle = BalancerSharedPoolPriceProvider(oracle1);
-    abptv2Oracle = BalancerV2SharedPoolPriceProvider(oracle2);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 18961127);
+    // DeployOracles step0 = new DeployOracles();
+    // (address oracle1, address oracle2) = step0._deploy();
+    abptOracle = BalancerSharedPoolPriceProvider(0x209Ad99bd808221293d03827B86cC544bcA0023b);
+    abptv2Oracle = BalancerV2SharedPoolPriceProvider(0xADf86b537eF08591c2777E144322E8b0Ca7E82a7);
 
     // deploy impls
     DeployImpl step1 = new DeployImpl();
