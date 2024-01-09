@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
+import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AggregatorInterface} from 'aave-address-book/AaveV3.sol';
 import {ILido} from '../interfaces/ILido.sol';
@@ -9,7 +9,7 @@ import {IWeth} from '../interfaces/IWeth.sol';
 import {IWstETH} from '../interfaces/IWstETH.sol';
 import {Vault, BPool, BalancerPool, ERC20} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
-import {AggregatedStakedTokenV3} from 'stake-token/contracts/AggregatedStakedTokenV3.sol';
+import {IAggregatedStakeToken} from 'stake-token/contracts/IAggregatedStakeToken.sol';
 import {Rescuable} from 'solidity-utils/contracts/utils/Rescuable.sol';
 
 /**
@@ -41,7 +41,7 @@ contract StkABPTMigrator is Rescuable {
    * allow the short executor to rescue tokens
    */
   function whoCanRescue() public pure override returns (address) {
-    return AaveGovernanceV2.SHORT_EXECUTOR;
+    return GovernanceV3Ethereum.EXECUTOR_LVL_1;
   }
 
   /**
@@ -77,7 +77,7 @@ contract StkABPTMigrator is Rescuable {
     uint256 poolOutAmountMin,
     bool all
   ) external {
-    AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).permit(
+    IAggregatedStakeToken(Addresses.STK_ABPT_V1).permit(
       msg.sender,
       address(this),
       amount,
@@ -95,8 +95,8 @@ contract StkABPTMigrator is Rescuable {
     uint256 poolOutAmountMin,
     bool all
   ) internal {
-    AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).transferFrom(msg.sender, address(this), amount);
-    AggregatedStakedTokenV3(Addresses.STK_ABPT_V1).redeem(address(this), amount);
+    IAggregatedStakeToken(Addresses.STK_ABPT_V1).transferFrom(msg.sender, address(this), amount);
+    IAggregatedStakeToken(Addresses.STK_ABPT_V1).redeem(address(this), amount);
     if (all) {
       _migrateAll(
         BPool(Addresses.ABPT_V1).balanceOf(address(this)),
@@ -110,7 +110,7 @@ contract StkABPTMigrator is Rescuable {
         poolOutAmountMin
       );
     }
-    AggregatedStakedTokenV3(STK_ABPT_V2).stake(
+    IAggregatedStakeToken(STK_ABPT_V2).stake(
       msg.sender,
       BalancerPool(Addresses.ABPT_V2).balanceOf(address(this))
     );

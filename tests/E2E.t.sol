@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import 'forge-std/Test.sol';
-import {GovHelpers} from 'aave-helpers/GovHelpers.sol';
-import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
+import {GovV3Helpers} from 'aave-helpers/GovV3Helpers.sol';
 import {AaveV3Ethereum, AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
-import {AggregatedStakedTokenV3} from 'aave-stk-gov-v3/interfaces/AggregatedStakedTokenV3.sol';
+import {IAggregatedStakeToken} from 'stake-token/contracts/IAggregatedStakeToken.sol';
+import {AggregatedStakedTokenV3} from 'stk-no-cooldown/interfaces/AggregatedStakedTokenV3.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {DeployOracles} from '../scripts/00_PriceOracles.s.sol';
 import {DeployImpl} from '../scripts/01_DeployStkAbptV2Impl.sol';
@@ -53,7 +53,7 @@ contract E2E is Test {
     migrator = new StkABPTMigrator(stkABPTV2);
 
     // execute proposal
-    GovHelpers.executePayload(vm, payload, AaveGovernanceV2.SHORT_EXECUTOR);
+    GovV3Helpers.executePayload(vm, payload);
 
     // create test user
     ownerPrivateKey = 0xA11CE;
@@ -126,7 +126,7 @@ contract E2E is Test {
     SigUtils.Permit memory permit = SigUtils.Permit({
       owner: owner,
       spender: address(migrator),
-      value: IERC20(STK_ABPT_V1).balanceOf(owner),
+      value: AggregatedStakedTokenV3(STK_ABPT_V1).balanceOf(owner),
       nonce: AggregatedStakedTokenV3(STK_ABPT_V1)._nonces(owner),
       deadline: block.timestamp + 1 days
     });
@@ -153,9 +153,9 @@ contract E2E is Test {
   function test_claimRewards() public {
     test_migrateStkAbpt();
     vm.warp(block.timestamp + 10000);
-    uint256 rewards = AggregatedStakedTokenV3(stkABPTV2).getTotalRewardsBalance(owner);
+    uint256 rewards = IAggregatedStakeToken(stkABPTV2).getTotalRewardsBalance(owner);
     assertGt(rewards, 0);
-    AggregatedStakedTokenV3(stkABPTV2).claimRewards(owner, type(uint256).max);
+    IAggregatedStakeToken(stkABPTV2).claimRewards(owner, type(uint256).max);
   }
 }
 

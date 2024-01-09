@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {AaveMisc} from 'aave-address-book/AaveMisc.sol';
+import {MiscEthereum} from 'aave-address-book/MiscEthereum.sol';
 import {ProxyAdmin} from 'solidity-utils/contracts/transparent-proxy/ProxyAdmin.sol';
 import {TransparentUpgradeableProxy} from 'solidity-utils/contracts/transparent-proxy/TransparentUpgradeableProxy.sol';
 import {GenericProposal} from '../libs/GenericProposal.sol';
@@ -32,7 +32,14 @@ contract ProposalPayload {
   }
 
   function execute() external {
-    // 1. stop emission on module v1
+    // 1. disable cooldown by upgrading the impl
+    ProxyAdmin(MiscEthereum.PROXY_ADMIN).upgradeAndCall(
+      TransparentUpgradeableProxy(payable(STK_ABPT_V1)),
+      STK_ABPT_V1_IMPL,
+      abi.encodeWithSignature('initialize()')
+    );
+
+    // 2. stop emission on module v1
     DistributionTypes.AssetConfigInput[]
       memory disableConfigs = new DistributionTypes.AssetConfigInput[](1);
     disableConfigs[0] = DistributionTypes.AssetConfigInput({
@@ -42,19 +49,14 @@ contract ProposalPayload {
     });
     IAaveDistributionManager(STK_ABPT_V1).configureAssets(disableConfigs);
 
-    // 2. disable cooldown by upgrading the impl
-    ProxyAdmin(AaveMisc.PROXY_ADMIN_ETHEREUM).upgradeAndCall(
-      TransparentUpgradeableProxy(payable(STK_ABPT_V1)),
-      STK_ABPT_V1_IMPL,
-      abi.encodeWithSignature('initialize()')
-    );
-
     // 3. create new SM
-    ProxyAdmin(AaveMisc.PROXY_ADMIN_ETHEREUM).upgradeAndCall(
+    ProxyAdmin(MiscEthereum.PROXY_ADMIN).upgradeAndCall(
       TransparentUpgradeableProxy(payable(STK_ABPT_V2_PROXY)),
       STK_ABPT_V2_IMPL,
       abi.encodeWithSignature(
-        'initialize(address,address,address,uint256,uint256)',
+        'initialize(string,string,address,address,address,uint256,uint256)',
+        'StkABPT', // name
+        'StkABPT', // symbol
         GenericProposal.SLASHING_ADMIN,
         GenericProposal.COOLDOWN_ADMIN,
         GenericProposal.CLAIM_HELPER,
@@ -64,8 +66,8 @@ contract ProposalPayload {
     );
 
     // 4. start emission on module v2
-    AaveMisc.AAVE_ECOSYSTEM_RESERVE_CONTROLLER.approve(
-      AaveMisc.ECOSYSTEM_RESERVE,
+    MiscEthereum.AAVE_ECOSYSTEM_RESERVE_CONTROLLER.approve(
+      MiscEthereum.ECOSYSTEM_RESERVE,
       AAVE,
       STK_ABPT_V2_PROXY,
       180_000 ether // TODO: what is the correct value here?
