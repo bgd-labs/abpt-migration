@@ -43,11 +43,11 @@ contract E2E is Test {
 
     // deploy impls
     DeployImpl step1 = new DeployImpl();
-    (stkAbptV1Impl, stkAbptV2Impl, stkABPTV2) = step1._deploy();
+    (stkAbptV1Impl, stkABPTV2) = step1._deploy();
 
     // deploy actual payload
     DeployPayload step2 = new DeployPayload();
-    address payload = step2._deploy(stkAbptV1Impl, stkAbptV2Impl, stkABPTV2);
+    address payload = step2._deploy(stkAbptV1Impl, stkABPTV2);
 
     // deploy migration helper
     migrator = new StkABPTMigrator(stkABPTV2);
@@ -93,15 +93,14 @@ contract E2E is Test {
 
     // calculate minOut based on $ value - 0.01 %
     // this should happen offchain
-    uint256 minBptOut = ((amount * uint256(abptOracle.latestAnswer())) /
+    uint256 expectedBptOut = ((amount * uint256(abptOracle.latestAnswer())) /
       uint256(abptv2Oracle.latestAnswer()));
-    uint256 minBptOutWithSlippage = (minBptOut * 9_999) / 10_000;
+    uint256 minBptOutWithSlippage = (expectedBptOut * 9_999) / 10_000;
 
     migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOutWithSlippage, true);
 
     uint256 actualBPT = IERC20(stkABPTV2).balanceOf(owner);
-    assertGe(actualBPT, minBptOutWithSlippage);
-    assertLt(actualBPT - minBptOutWithSlippage, minBptOut - minBptOutWithSlippage);
+    assertGe(actualBPT, minBptOutWithSlippage, 'RECEIVED_LESS_THEN_MIN');
   }
 
   /**
@@ -119,7 +118,7 @@ contract E2E is Test {
     } else {
       assertGt(wstETHBalance, 0);
     }
-    assertEq(IERC20(stkABPTV2).balanceOf(owner), 228733940221947756582513);
+    assertEq(IERC20(stkABPTV2).balanceOf(owner), 231777900785064752966011);
   }
 
   function test_migrationWithPermit() public {

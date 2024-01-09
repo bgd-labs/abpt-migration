@@ -13,18 +13,10 @@ import {GenericProposal} from '../src/libs/GenericProposal.sol';
 import {Addresses} from '../src/libs/Addresses.sol';
 
 /**
- * This is an completely empty contract.
- * It just exists to initialize Proxies with "some implementation"
- */
-contract PlaceholderContract {
-
-}
-
-/**
  * @notice Deploys a the implementation for the pool with the bricked initialize.
  */
 contract DeployImpl is EthereumScript {
-  function _deploy() public returns (address, address, address) {
+  function _deploy() public returns (address, address) {
     address stkABPTV2Impl = address(
       new StakeToken(
         'AAVE SM',
@@ -38,9 +30,18 @@ contract DeployImpl is EthereumScript {
 
     address tokenProxy = ITransparentProxyFactory(MiscEthereum.TRANSPARENT_PROXY_FACTORY)
       .createDeterministic(
-        address(new PlaceholderContract()),
+        address(stkABPTV2Impl),
         MiscEthereum.PROXY_ADMIN,
-        bytes(''),
+        abi.encodeWithSignature(
+          'initialize(string,string,address,address,address,uint256,uint256)',
+          'StkABPT', // name
+          'StkABPT', // symbol
+          GenericProposal.SLASHING_ADMIN,
+          GenericProposal.COOLDOWN_ADMIN,
+          GenericProposal.CLAIM_HELPER,
+          GenericProposal.MAX_SLASHING,
+          GenericProposal.COOLDOWN_SECONDS
+        ),
         'ABPT_V2'
       );
 
@@ -55,7 +56,6 @@ contract DeployImpl is EthereumScript {
           GenericProposal.DISTRIBUTION_DURATION
         )
       ),
-      stkABPTV2Impl,
       tokenProxy
     );
   }

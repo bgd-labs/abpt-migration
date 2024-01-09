@@ -7,6 +7,7 @@ import {TransparentUpgradeableProxy} from 'solidity-utils/contracts/transparent-
 import {GenericProposal} from '../libs/GenericProposal.sol';
 import {DistributionTypes} from 'stake-token/contracts/lib/DistributionTypes.sol';
 import {IAaveDistributionManager} from 'stake-token/contracts/IAaveDistributionManager.sol';
+import {IAggregatedStakeToken} from 'stake-token/contracts/IAggregatedStakeToken.sol';
 import {Vault} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
 
@@ -25,9 +26,8 @@ contract ProposalPayload {
   address public immutable STK_ABPT_V2_IMPL;
   address public immutable STK_ABPT_V2_PROXY;
 
-  constructor(address newStkABPTV1Impl, address newStkABPTV2Impl, address stkABPTV2Proxy) {
+  constructor(address newStkABPTV1Impl, address stkABPTV2Proxy) {
     STK_ABPT_V1_IMPL = newStkABPTV1Impl;
-    STK_ABPT_V2_IMPL = newStkABPTV2Impl;
     STK_ABPT_V2_PROXY = stkABPTV2Proxy;
   }
 
@@ -49,23 +49,7 @@ contract ProposalPayload {
     });
     IAaveDistributionManager(STK_ABPT_V1).configureAssets(disableConfigs);
 
-    // 3. create new SM
-    ProxyAdmin(MiscEthereum.PROXY_ADMIN).upgradeAndCall(
-      TransparentUpgradeableProxy(payable(STK_ABPT_V2_PROXY)),
-      STK_ABPT_V2_IMPL,
-      abi.encodeWithSignature(
-        'initialize(string,string,address,address,address,uint256,uint256)',
-        'StkABPT', // name
-        'StkABPT', // symbol
-        GenericProposal.SLASHING_ADMIN,
-        GenericProposal.COOLDOWN_ADMIN,
-        GenericProposal.CLAIM_HELPER,
-        GenericProposal.MAX_SLASHING,
-        GenericProposal.COOLDOWN_SECONDS
-      )
-    );
-
-    // 4. start emission on module v2
+    // 3. start emission on module v2
     MiscEthereum.AAVE_ECOSYSTEM_RESERVE_CONTROLLER.approve(
       MiscEthereum.ECOSYSTEM_RESERVE,
       AAVE,
@@ -80,5 +64,6 @@ contract ProposalPayload {
       underlyingAsset: STK_ABPT_V2_PROXY
     });
     IAaveDistributionManager(STK_ABPT_V2_PROXY).configureAssets(enableConfigs);
+    IAggregatedStakeToken(STK_ABPT_V2_PROXY).setDistributionEnd(block.timestamp + 365 days);
   }
 }
