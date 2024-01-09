@@ -12,6 +12,7 @@ import {Addresses} from '../libs/Addresses.sol';
 import {IAggregatedStakeToken} from 'stake-token/contracts/IAggregatedStakeToken.sol';
 import {Rescuable} from 'solidity-utils/contracts/utils/Rescuable.sol';
 import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
+import {AaveSafetyModule} from 'aave-address-book/AaveSafetyModule.sol';
 
 /**
  * @title StkABPTMigrator
@@ -29,9 +30,13 @@ contract StkABPTMigrator is Rescuable {
       type(uint256).max
     );
     // infinite approval for wrapping stETH
-    _safeApprove(ERC20(Addresses.STETH), Addresses.WSTETH, type(uint256).max);
+    _safeApprove(ERC20(Addresses.STETH), AaveV3EthereumAssets.wstETH_UNDERLYING, type(uint256).max);
     // infinite approval for pussing wstETH into the lp
-    _safeApprove(ERC20(Addresses.WSTETH), Addresses.BALANCER_VAULT, type(uint256).max);
+    _safeApprove(
+      ERC20(AaveV3EthereumAssets.wstETH_UNDERLYING),
+      Addresses.BALANCER_VAULT,
+      type(uint256).max
+    );
     // infinite approval for putting the lp into stkLP
     _safeApprove(ERC20(Addresses.ABPT_V2), stkABPTV2, type(uint256).max);
     STK_ABPT_V2 = stkABPTV2;
@@ -82,7 +87,7 @@ contract StkABPTMigrator is Rescuable {
     uint256 poolOutAmountMin,
     bool all
   ) external {
-    IAggregatedStakeToken(Addresses.STK_ABPT_V1).permit(
+    IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).permit(
       msg.sender,
       address(this),
       amount,
@@ -100,8 +105,12 @@ contract StkABPTMigrator is Rescuable {
     uint256 poolOutAmountMin,
     bool all
   ) internal {
-    IAggregatedStakeToken(Addresses.STK_ABPT_V1).transferFrom(msg.sender, address(this), amount);
-    IAggregatedStakeToken(Addresses.STK_ABPT_V1).redeem(address(this), amount);
+    IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).transferFrom(
+      msg.sender,
+      address(this),
+      amount
+    );
+    IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).redeem(address(this), amount);
     if (all) {
       _migrateAll(
         BPool(Addresses.ABPT_V1).balanceOf(address(this)),
@@ -127,20 +136,24 @@ contract StkABPTMigrator is Rescuable {
     uint256 poolOutAmountMin
   ) internal {
     // Exit v1 pool
-    uint256 wethBalanceBefore = ERC20(Addresses.WETH).balanceOf(address(this));
+    uint256 wethBalanceBefore = ERC20(AaveV3EthereumAssets.WETH_UNDERLYING).balanceOf(
+      address(this)
+    );
     uint256 aaveBalanceBefore = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(
       address(this)
     );
-    uint256 wstETHBalanceBefore = ERC20(Addresses.WSTETH).balanceOf(address(this));
+    uint256 wstETHBalanceBefore = ERC20(AaveV3EthereumAssets.wstETH_UNDERLYING).balanceOf(
+      address(this)
+    );
 
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
-    uint256 wethBalanceAfter = ERC20(Addresses.WETH).balanceOf(address(this));
+    uint256 wethBalanceAfter = ERC20(AaveV3EthereumAssets.WETH_UNDERLYING).balanceOf(address(this));
     uint256 aaveBalanceAfter = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(address(this));
 
     (address[] memory outTokens, uint256[] memory balances, ) = Vault(Addresses.BALANCER_VAULT)
       .getPoolTokens(Addresses.ABPT_V2_ID);
     // migrate weth to wstETH
-    require(outTokens[0] == Addresses.WSTETH);
+    require(outTokens[0] == AaveV3EthereumAssets.wstETH_UNDERLYING);
     require(outTokens[1] == AaveV3EthereumAssets.AAVE_UNDERLYING);
     uint256[] memory tokenInAmounts = new uint256[](outTokens.length);
     tokenInAmounts[0] = _wethToWesth(wethBalanceAfter - wethBalanceBefore);
@@ -195,10 +208,15 @@ contract StkABPTMigrator is Rescuable {
         'ERR_TRANSFER_FAILED'
       );
     }
-    uint256 finalWstETHBalance = ERC20(Addresses.WSTETH).balanceOf(address(this));
+    uint256 finalWstETHBalance = ERC20(AaveV3EthereumAssets.wstETH_UNDERLYING).balanceOf(
+      address(this)
+    );
     if (finalWstETHBalance > wstETHBalanceBefore) {
       require(
-        ERC20(Addresses.WSTETH).transfer(msg.sender, finalWstETHBalance - wstETHBalanceBefore),
+        ERC20(AaveV3EthereumAssets.wstETH_UNDERLYING).transfer(
+          msg.sender,
+          finalWstETHBalance - wstETHBalanceBefore
+        ),
         'ERR_TRANSFER_FAILED'
       );
     }
@@ -210,19 +228,21 @@ contract StkABPTMigrator is Rescuable {
     uint256 poolOutAmountMin
   ) internal {
     // Exit v1 pool
-    uint256 wethBalanceBefore = ERC20(Addresses.WETH).balanceOf(address(this));
+    uint256 wethBalanceBefore = ERC20(AaveV3EthereumAssets.WETH_UNDERLYING).balanceOf(
+      address(this)
+    );
     uint256 aaveBalanceBefore = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(
       address(this)
     );
 
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
 
-    uint256 wethBalanceAfter = ERC20(Addresses.WETH).balanceOf(address(this));
+    uint256 wethBalanceAfter = ERC20(AaveV3EthereumAssets.WETH_UNDERLYING).balanceOf(address(this));
     uint256 aaveBalanceAfter = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(address(this));
 
     // Join v2 pool and transfer v2 BPTs to user
     address[] memory outTokens = new address[](2);
-    outTokens[0] = Addresses.WSTETH;
+    outTokens[0] = AaveV3EthereumAssets.wstETH_UNDERLYING;
     outTokens[1] = AaveV3EthereumAssets.AAVE_UNDERLYING;
     uint256[] memory tokenInAmounts = new uint[](outTokens.length);
     tokenInAmounts[0] = _wethToWesth(wethBalanceAfter - wethBalanceBefore);
@@ -249,13 +269,13 @@ contract StkABPTMigrator is Rescuable {
 
   function _wethToWesth(uint256 amount) internal returns (uint256) {
     // Unwrap WETH to ETH
-    IWeth(Addresses.WETH).withdraw(amount);
+    IWeth(AaveV3EthereumAssets.WETH_UNDERLYING).withdraw(amount);
     // supply ETH to stETH
     uint256 stETHBefore = ERC20(Addresses.STETH).balanceOf(address(this));
     ILido(Addresses.STETH).submit{value: amount}(address(0));
     uint256 stETHAfter = ERC20(Addresses.STETH).balanceOf(address(this));
     // wrap stETH to wstETH
-    return IWstETH(Addresses.WSTETH).wrap(stETHAfter - stETHBefore);
+    return IWstETH(AaveV3EthereumAssets.wstETH_UNDERLYING).wrap(stETHAfter - stETHBefore);
   }
 
   // --- Internals ---FrÃ©land, 68240, Franceranrupt
