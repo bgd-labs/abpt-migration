@@ -11,6 +11,7 @@ import {Vault, BPool, BalancerPool, ERC20} from '../interfaces/Actions.sol';
 import {Addresses} from '../libs/Addresses.sol';
 import {IAggregatedStakeToken} from 'stake-token/contracts/IAggregatedStakeToken.sol';
 import {Rescuable} from 'solidity-utils/contracts/utils/Rescuable.sol';
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 
 /**
  * @title StkABPTMigrator
@@ -22,7 +23,11 @@ contract StkABPTMigrator is Rescuable {
 
   constructor(address stkABPTV2) {
     // infinite approval for putting aave into the lp
-    _safeApprove(ERC20(Addresses.AAVE), Addresses.BALANCER_VAULT, type(uint256).max);
+    _safeApprove(
+      ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING),
+      Addresses.BALANCER_VAULT,
+      type(uint256).max
+    );
     // infinite approval for wrapping stETH
     _safeApprove(ERC20(Addresses.STETH), Addresses.WSTETH, type(uint256).max);
     // infinite approval for pussing wstETH into the lp
@@ -123,18 +128,20 @@ contract StkABPTMigrator is Rescuable {
   ) internal {
     // Exit v1 pool
     uint256 wethBalanceBefore = ERC20(Addresses.WETH).balanceOf(address(this));
-    uint256 aaveBalanceBefore = ERC20(Addresses.AAVE).balanceOf(address(this));
+    uint256 aaveBalanceBefore = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(
+      address(this)
+    );
     uint256 wstETHBalanceBefore = ERC20(Addresses.WSTETH).balanceOf(address(this));
 
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
     uint256 wethBalanceAfter = ERC20(Addresses.WETH).balanceOf(address(this));
-    uint256 aaveBalanceAfter = ERC20(Addresses.AAVE).balanceOf(address(this));
+    uint256 aaveBalanceAfter = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(address(this));
 
     (address[] memory outTokens, uint256[] memory balances, ) = Vault(Addresses.BALANCER_VAULT)
       .getPoolTokens(Addresses.ABPT_V2_ID);
     // migrate weth to wstETH
     require(outTokens[0] == Addresses.WSTETH);
-    require(outTokens[1] == Addresses.AAVE);
+    require(outTokens[1] == AaveV3EthereumAssets.AAVE_UNDERLYING);
     uint256[] memory tokenInAmounts = new uint256[](outTokens.length);
     tokenInAmounts[0] = _wethToWesth(wethBalanceAfter - wethBalanceBefore);
     tokenInAmounts[1] = aaveBalanceAfter - aaveBalanceBefore;
@@ -178,10 +185,13 @@ contract StkABPTMigrator is Rescuable {
       request
     );
     // Send "change" back
-    uint256 finalAaveBalance = ERC20(Addresses.AAVE).balanceOf(address(this));
+    uint256 finalAaveBalance = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(address(this));
     if (finalAaveBalance > aaveBalanceBefore) {
       require(
-        ERC20(Addresses.AAVE).transfer(msg.sender, finalAaveBalance - aaveBalanceBefore),
+        ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).transfer(
+          msg.sender,
+          finalAaveBalance - aaveBalanceBefore
+        ),
         'ERR_TRANSFER_FAILED'
       );
     }
@@ -201,17 +211,19 @@ contract StkABPTMigrator is Rescuable {
   ) internal {
     // Exit v1 pool
     uint256 wethBalanceBefore = ERC20(Addresses.WETH).balanceOf(address(this));
-    uint256 aaveBalanceBefore = ERC20(Addresses.AAVE).balanceOf(address(this));
+    uint256 aaveBalanceBefore = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(
+      address(this)
+    );
 
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
 
     uint256 wethBalanceAfter = ERC20(Addresses.WETH).balanceOf(address(this));
-    uint256 aaveBalanceAfter = ERC20(Addresses.AAVE).balanceOf(address(this));
+    uint256 aaveBalanceAfter = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(address(this));
 
     // Join v2 pool and transfer v2 BPTs to user
     address[] memory outTokens = new address[](2);
     outTokens[0] = Addresses.WSTETH;
-    outTokens[1] = Addresses.AAVE;
+    outTokens[1] = AaveV3EthereumAssets.AAVE_UNDERLYING;
     uint256[] memory tokenInAmounts = new uint[](outTokens.length);
     tokenInAmounts[0] = _wethToWesth(wethBalanceAfter - wethBalanceBefore);
     tokenInAmounts[1] = aaveBalanceAfter - aaveBalanceBefore;
