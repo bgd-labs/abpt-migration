@@ -14,11 +14,12 @@ import {StkABPTMigrator} from '../src/contracts/StkABPTMigrator.sol';
 import {SigUtils} from './SigUtils.sol';
 import {BalancerSharedPoolPriceProvider, BPool} from '../src/contracts/BalancerSharedPoolPriceProvider.sol';
 import {BalancerV2SharedPoolPriceProvider, BVaultV2, BPoolV2} from '../src/contracts/BalancerV2SharedPoolPriceProvider.sol';
-import {Addresses} from '../src/libs/Addresses.sol';
+import {AaveSafetyModule} from 'aave-address-book/AaveSafetyModule.sol';
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 
 contract E2E is Test {
   address constant STK_ABPT_WHALE = 0xF23c8539069C471F5C12692a3471C9F4E8B88BC2;
-  address public constant STK_ABPT_V1 = 0xa1116930326D21fB917d5A27F1E9943A9595fb47;
+  address public constant STK_ABPT_V1 = AaveSafetyModule.STK_ABPT;
 
   address public stkAbptV1Impl;
   address public stkAbptV2Impl;
@@ -111,8 +112,8 @@ contract E2E is Test {
     IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
     uint[] memory tokenOutAmountsMin = new uint[](2);
     migrator.migrateStkABPT(IERC20(STK_ABPT_V1).balanceOf(owner), tokenOutAmountsMin, 0, false);
-    uint256 wstETHBalance = IERC20(Addresses.WSTETH).balanceOf(owner);
-    uint256 aaveBalance = IERC20(Addresses.AAVE).balanceOf(owner);
+    uint256 wstETHBalance = IERC20(AaveV3EthereumAssets.wstETH_UNDERLYING).balanceOf(owner);
+    uint256 aaveBalance = IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(owner);
     if (wstETHBalance == 0) {
       assertGt(aaveBalance, 0);
     } else {
@@ -171,7 +172,7 @@ contract OracleTest is Test {
   }
 
   function testAAVEPrice() public {
-    console.log(AaveV3Ethereum.ORACLE.getAssetPrice(Addresses.AAVE));
+    console.log(AaveV3Ethereum.ORACLE.getAssetPrice(AaveV3EthereumAssets.AAVE_UNDERLYING));
   }
 
   function testV1OraclePrice() public {

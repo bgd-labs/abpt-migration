@@ -8,8 +8,9 @@ import {GenericProposal} from '../libs/GenericProposal.sol';
 import {DistributionTypes} from 'stake-token/contracts/lib/DistributionTypes.sol';
 import {IAaveDistributionManager} from 'stake-token/contracts/IAaveDistributionManager.sol';
 import {IAggregatedStakeToken} from 'stake-token/contracts/IAggregatedStakeToken.sol';
-import {Vault} from '../interfaces/Actions.sol';
-import {Addresses} from '../libs/Addresses.sol';
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
+import {AaveSafetyModule} from 'aave-address-book/AaveSafetyModule.sol';
 
 /**
  * @title StkABPTV2 Proposal
@@ -17,13 +18,9 @@ import {Addresses} from '../libs/Addresses.sol';
  * @notice migrates emissions to a new stkABPT
  */
 contract ProposalPayload {
-  address public constant AAVE = Addresses.AAVE;
-  address public constant WSTETH = Addresses.WSTETH;
-  address public constant STK_ABPT_V1 = Addresses.STK_ABPT_V1;
-  Vault public constant VAULT = Vault(Addresses.BALANCER_VAULT);
+  uint256 public constant EMISSION_PER_SECOND = 4456018518518518; // same as current
 
   address public immutable STK_ABPT_V1_IMPL;
-  address public immutable STK_ABPT_V2_IMPL;
   address public immutable STK_ABPT_V2_PROXY;
 
   constructor(address newStkABPTV1Impl, address stkABPTV2Proxy) {
@@ -34,7 +31,7 @@ contract ProposalPayload {
   function execute() external {
     // 1. disable cooldown by upgrading the impl
     ProxyAdmin(MiscEthereum.PROXY_ADMIN).upgradeAndCall(
-      TransparentUpgradeableProxy(payable(STK_ABPT_V1)),
+      TransparentUpgradeableProxy(payable(AaveSafetyModule.STK_ABPT)),
       STK_ABPT_V1_IMPL,
       abi.encodeWithSignature('initialize()')
     );
@@ -45,25 +42,27 @@ contract ProposalPayload {
     disableConfigs[0] = DistributionTypes.AssetConfigInput({
       emissionPerSecond: 0,
       totalStaked: 0, // it's overwritten internally
-      underlyingAsset: STK_ABPT_V1
+      underlyingAsset: AaveSafetyModule.STK_ABPT
     });
-    IAaveDistributionManager(STK_ABPT_V1).configureAssets(disableConfigs);
+    IAaveDistributionManager(AaveSafetyModule.STK_ABPT).configureAssets(disableConfigs);
 
     // 3. start emission on module v2
-    MiscEthereum.AAVE_ECOSYSTEM_RESERVE_CONTROLLER.approve(
-      MiscEthereum.ECOSYSTEM_RESERVE,
-      AAVE,
-      STK_ABPT_V2_PROXY,
-      180_000 ether // TODO: what is the correct value here?
+    IAggregatedStakeToken(STK_ABPT_V2_PROXY).setDistributionEnd(
+      block.timestamp + GenericProposal.DISTRIBUTION_DURATION
     );
     DistributionTypes.AssetConfigInput[]
       memory enableConfigs = new DistributionTypes.AssetConfigInput[](1);
     enableConfigs[0] = DistributionTypes.AssetConfigInput({
-      emissionPerSecond: 6365740740740741, // same as current
+      emissionPerSecond: uint128(EMISSION_PER_SECOND),
       totalStaked: 0, // it's overwritten internally
       underlyingAsset: STK_ABPT_V2_PROXY
     });
     IAaveDistributionManager(STK_ABPT_V2_PROXY).configureAssets(enableConfigs);
-    IAggregatedStakeToken(STK_ABPT_V2_PROXY).setDistributionEnd(block.timestamp + 365 days);
+    MiscEthereum.AAVE_ECOSYSTEM_RESERVE_CONTROLLER.approve(
+      MiscEthereum.ECOSYSTEM_RESERVE,
+      AaveV3EthereumAssets.AAVE_UNDERLYING,
+      STK_ABPT_V2_PROXY,
+      EMISSION_PER_SECOND * GenericProposal.DISTRIBUTION_DURATION
+    );
   }
 }

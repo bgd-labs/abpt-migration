@@ -21,5 +21,5 @@ library GenericProposal {
 
   uint256 public constant UNSTAKE_WINDOW = 172800; // 2 days
 
-  uint128 public constant DISTRIBUTION_DURATION = 3155692600; // 100 years
+  uint128 public constant DISTRIBUTION_DURATION = 365 days; // 100 years
 }
