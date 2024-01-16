@@ -31,7 +31,7 @@ contract StkABPTMigrator is Rescuable {
     );
     // infinite approval for wrapping stETH
     _safeApprove(ERC20(Addresses.STETH), AaveV3EthereumAssets.wstETH_UNDERLYING, type(uint256).max);
-    // infinite approval for pussing wstETH into the lp
+    // infinite approval for depositing wstETH into the LP
     _safeApprove(
       ERC20(AaveV3EthereumAssets.wstETH_UNDERLYING),
       Addresses.BALANCER_VAULT,
