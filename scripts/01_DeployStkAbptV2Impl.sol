@@ -19,7 +19,7 @@ contract DeployImpl is EthereumScript {
   function _deploy() public returns (address, address) {
     address stkABPTV2Impl = address(
       new StakeToken(
-        'AAVE SM',
+        'Aave SM',
         IERC20(Addresses.ABPT_V2),
         IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING),
         GenericProposal.UNSTAKE_WINDOW,
@@ -34,8 +34,8 @@ contract DeployImpl is EthereumScript {
         MiscEthereum.PROXY_ADMIN,
         abi.encodeWithSignature(
           'initialize(string,string,address,address,address,uint256,uint256)',
-          'StkABPT', // name
-          'StkABPT', // symbol
+          'stk AAVE/wstETH BPTv2', // name
+          'stkAAVEwstETHBPTv2', // symbol
           GenericProposal.SLASHING_ADMIN,
           GenericProposal.COOLDOWN_ADMIN,
           GenericProposal.CLAIM_HELPER,
