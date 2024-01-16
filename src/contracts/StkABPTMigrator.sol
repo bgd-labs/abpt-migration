@@ -102,20 +102,23 @@ contract StkABPTMigrator is Rescuable {
     uint256[] calldata tokenOutAmountsMin,
     uint256 poolOutAmountMin
   ) internal {
-    IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).transferFrom(
-      msg.sender,
-      address(this),
-      amount
-    );
-    IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).redeem(address(this), amount);
-    uint256 poolInAmount = BPool(Addresses.ABPT_V1).balanceOf(address(this));
-    // Exit v1 pool
+    // snapshot balances
     uint256 wethBalanceBefore = ERC20(AaveV3EthereumAssets.WETH_UNDERLYING).balanceOf(
       address(this)
     );
     uint256 aaveBalanceBefore = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(
       address(this)
     );
+    uint256 abptV1BalanceBefore = ERC20(Addresses.ABPT_V1).balanceOf(address(this));
+    uint256 abptV2BalanceBefore = ERC20(Addresses.ABPT_V2).balanceOf(address(this));
+    // Exit v1 pool
+    IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).transferFrom(
+      msg.sender,
+      address(this),
+      amount
+    );
+    IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).redeem(address(this), amount);
+    uint256 poolInAmount = BPool(Addresses.ABPT_V1).balanceOf(address(this)) - abptV1BalanceBefore;
 
     BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
 
@@ -150,7 +153,7 @@ contract StkABPTMigrator is Rescuable {
 
     IAggregatedStakeToken(STK_ABPT_V2).stake(
       msg.sender,
-      BalancerPool(Addresses.ABPT_V2).balanceOf(address(this))
+      BalancerPool(Addresses.ABPT_V2).balanceOf(address(this)) - abptV2BalanceBefore
     );
   }
 
