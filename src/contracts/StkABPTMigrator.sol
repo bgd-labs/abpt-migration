@@ -162,7 +162,7 @@ contract StkABPTMigrator is Rescuable {
     IWeth(AaveV3EthereumAssets.WETH_UNDERLYING).withdraw(amount);
     // supply ETH to stETH
     uint256 stETHBefore = ERC20(Addresses.STETH).balanceOf(address(this));
-    ILido(Addresses.STETH).submit{value: amount}(address(0));
+    ILido(Addresses.STETH).submit{value: amount}(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     uint256 stETHAfter = ERC20(Addresses.STETH).balanceOf(address(this));
     // wrap stETH to wstETH
     return IWstETH(AaveV3EthereumAssets.wstETH_UNDERLYING).wrap(stETHAfter - stETHBefore);
