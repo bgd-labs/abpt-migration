@@ -278,8 +278,6 @@ contract StkABPTMigrator is Rescuable {
     return IWstETH(AaveV3EthereumAssets.wstETH_UNDERLYING).wrap(stETHAfter - stETHBefore);
   }
 
-  // --- Internals ---FrÃ©land, 68240, Franceranrupt
-
   function _safeApprove(ERC20 token, address spender, uint256 amount) internal {
     if (token.allowance(address(this), spender) > 0) {
       token.approve(spender, 0);
