@@ -59,15 +59,13 @@ contract StkABPTMigrator is Rescuable {
    * @param amount the amount of stkABPT to migrate
    * @param tokenOutAmountsMin the minimum amount of AAVE/WETH you want to receive for redemption
    * @param poolOutAmountMin the minimum amount of stkABPTV2 tokens you want to receive
-   * @param all if true, will migrate all AAVE/WETH. If false will migrate proportionally and send the leftovers to your address.
    */
   function migrateStkABPT(
     uint256 amount,
     uint256[] calldata tokenOutAmountsMin,
-    uint256 poolOutAmountMin,
-    bool all
+    uint256 poolOutAmountMin
   ) external {
-    _migrate(amount, tokenOutAmountsMin, poolOutAmountMin, all);
+    _migrate(amount, tokenOutAmountsMin, poolOutAmountMin);
   }
 
   /**
@@ -75,7 +73,6 @@ contract StkABPTMigrator is Rescuable {
    * @param amount the amount of stkABPT to migrate
    * @param tokenOutAmountsMin the minimum amount of AAVE/WETH you want to receive for redemption
    * @param poolOutAmountMin the minimum amount of stkABPTV2 tokens you want to receive
-   * @param all if true, will migrate all AAVE/WETH. If false will migrate proportionally and send the leftovers to your address.
    */
   function migrateStkABPTWithPermit(
     uint256 amount,
@@ -84,26 +81,26 @@ contract StkABPTMigrator is Rescuable {
     bytes32 r,
     bytes32 s,
     uint256[] calldata tokenOutAmountsMin,
-    uint256 poolOutAmountMin,
-    bool all
+    uint256 poolOutAmountMin
   ) external {
-    IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).permit(
-      msg.sender,
-      address(this),
-      amount,
-      deadline,
-      v,
-      r,
-      s
-    );
-    _migrate(amount, tokenOutAmountsMin, poolOutAmountMin, all);
+    try
+      IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).permit(
+        msg.sender,
+        address(this),
+        amount,
+        deadline,
+        v,
+        r,
+        s
+      )
+    {} catch {}
+    _migrate(amount, tokenOutAmountsMin, poolOutAmountMin);
   }
 
   function _migrate(
     uint256 amount,
     uint256[] calldata tokenOutAmountsMin,
-    uint256 poolOutAmountMin,
-    bool all
+    uint256 poolOutAmountMin
   ) internal {
     IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).transferFrom(
       msg.sender,
@@ -111,122 +108,7 @@ contract StkABPTMigrator is Rescuable {
       amount
     );
     IAggregatedStakeToken(AaveSafetyModule.STK_ABPT).redeem(address(this), amount);
-    if (all) {
-      _migrateAll(
-        BPool(Addresses.ABPT_V1).balanceOf(address(this)),
-        tokenOutAmountsMin,
-        poolOutAmountMin
-      );
-    } else {
-      _migrateProportionally(
-        BPool(Addresses.ABPT_V1).balanceOf(address(this)),
-        tokenOutAmountsMin,
-        poolOutAmountMin
-      );
-    }
-    IAggregatedStakeToken(STK_ABPT_V2).stake(
-      msg.sender,
-      BalancerPool(Addresses.ABPT_V2).balanceOf(address(this))
-    );
-  }
-
-  function _migrateProportionally(
-    uint256 poolInAmount,
-    uint256[] calldata tokenOutAmountsMin,
-    uint256 poolOutAmountMin
-  ) internal {
-    // Exit v1 pool
-    uint256 wethBalanceBefore = ERC20(AaveV3EthereumAssets.WETH_UNDERLYING).balanceOf(
-      address(this)
-    );
-    uint256 aaveBalanceBefore = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(
-      address(this)
-    );
-    uint256 wstETHBalanceBefore = ERC20(AaveV3EthereumAssets.wstETH_UNDERLYING).balanceOf(
-      address(this)
-    );
-
-    BPool(Addresses.ABPT_V1).exitPool(poolInAmount, tokenOutAmountsMin);
-    uint256 wethBalanceAfter = ERC20(AaveV3EthereumAssets.WETH_UNDERLYING).balanceOf(address(this));
-    uint256 aaveBalanceAfter = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(address(this));
-
-    (address[] memory outTokens, uint256[] memory balances, ) = Vault(Addresses.BALANCER_VAULT)
-      .getPoolTokens(Addresses.ABPT_V2_ID);
-    // migrate weth to wstETH
-    require(outTokens[0] == AaveV3EthereumAssets.wstETH_UNDERLYING);
-    require(outTokens[1] == AaveV3EthereumAssets.AAVE_UNDERLYING);
-    uint256[] memory tokenInAmounts = new uint256[](outTokens.length);
-    tokenInAmounts[0] = _wethToWesth(wethBalanceAfter - wethBalanceBefore);
-    tokenInAmounts[1] = aaveBalanceAfter - aaveBalanceBefore;
-    // Calculate amounts for even join
-    // 1) find the lowest UserBalance-to-PoolBalance ratio
-    // 2) multiply by this ratio to get in amounts
-    uint256 lowestRatio = type(uint256).max;
-    uint256 lowestRatioToken = 0;
-
-    for (uint256 i = 0; i < outTokens.length; ++i) {
-      uint256 ratio = (1 ether * tokenInAmounts[i]) / balances[i];
-      if (ratio < lowestRatio) {
-        lowestRatio = ratio;
-        lowestRatioToken = i;
-      }
-    }
-    for (uint256 i = 0; i < outTokens.length; ++i) {
-      // Keep original amount for "bottleneck" token to avoid dust
-      if (lowestRatioToken == i) {
-        balances[i] = tokenInAmounts[i];
-      } else {
-        balances[i] = (balances[i] * lowestRatio) / 1 ether;
-      }
-    }
-    // Join v2 pool and transfer v2 BPTs to user
-    bytes memory userData = abi.encode(
-      BalancerPool.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT,
-      balances,
-      poolOutAmountMin
-    );
-    Vault.JoinPoolRequest memory request = Vault.JoinPoolRequest(
-      outTokens,
-      balances,
-      userData,
-      false
-    );
-    Vault(Addresses.BALANCER_VAULT).joinPool(
-      Addresses.ABPT_V2_ID,
-      address(this),
-      address(this),
-      request
-    );
-    // Send "change" back
-    uint256 finalAaveBalance = ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(address(this));
-    if (finalAaveBalance > aaveBalanceBefore) {
-      require(
-        ERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).transfer(
-          msg.sender,
-          finalAaveBalance - aaveBalanceBefore
-        ),
-        'ERR_TRANSFER_FAILED'
-      );
-    }
-    uint256 finalWstETHBalance = ERC20(AaveV3EthereumAssets.wstETH_UNDERLYING).balanceOf(
-      address(this)
-    );
-    if (finalWstETHBalance > wstETHBalanceBefore) {
-      require(
-        ERC20(AaveV3EthereumAssets.wstETH_UNDERLYING).transfer(
-          msg.sender,
-          finalWstETHBalance - wstETHBalanceBefore
-        ),
-        'ERR_TRANSFER_FAILED'
-      );
-    }
-  }
-
-  function _migrateAll(
-    uint256 poolInAmount,
-    uint256[] calldata tokenOutAmountsMin,
-    uint256 poolOutAmountMin
-  ) internal {
+    uint256 poolInAmount = BPool(Addresses.ABPT_V1).balanceOf(address(this));
     // Exit v1 pool
     uint256 wethBalanceBefore = ERC20(AaveV3EthereumAssets.WETH_UNDERLYING).balanceOf(
       address(this)
@@ -264,6 +146,11 @@ contract StkABPTMigrator is Rescuable {
       address(this),
       address(this),
       request
+    );
+
+    IAggregatedStakeToken(STK_ABPT_V2).stake(
+      msg.sender,
+      BalancerPool(Addresses.ABPT_V2).balanceOf(address(this))
     );
   }
 

@@ -98,28 +98,10 @@ contract E2E is Test {
       uint256(abptv2Oracle.latestAnswer()));
     uint256 minBptOutWithSlippage = (expectedBptOut * 9_999) / 10_000;
 
-    migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOutWithSlippage, true);
+    migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOutWithSlippage);
 
     uint256 actualBPT = IERC20(stkABPTV2).balanceOf(owner);
     assertGe(actualBPT, minBptOutWithSlippage, 'RECEIVED_LESS_THEN_MIN');
-  }
-
-  /**
-   * @dev Migrate partial stkAbpt -> stkAbpt v2 via BActions
-   * In this case you would need to control slippage
-   */
-  function test_migratePartialStkAbpt() public {
-    IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
-    uint[] memory tokenOutAmountsMin = new uint[](2);
-    migrator.migrateStkABPT(IERC20(STK_ABPT_V1).balanceOf(owner), tokenOutAmountsMin, 0, false);
-    uint256 wstETHBalance = IERC20(AaveV3EthereumAssets.wstETH_UNDERLYING).balanceOf(owner);
-    uint256 aaveBalance = IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING).balanceOf(owner);
-    if (wstETHBalance == 0) {
-      assertGt(aaveBalance, 0);
-    } else {
-      assertGt(wstETHBalance, 0);
-    }
-    assertEq(IERC20(stkABPTV2).balanceOf(owner), 231777900785064752966011);
   }
 
   function test_migrationWithPermit() public {
@@ -145,8 +127,7 @@ contract E2E is Test {
       r,
       s,
       tokenOutAmountsMin,
-      0,
-      true
+      0
     );
   }
 
