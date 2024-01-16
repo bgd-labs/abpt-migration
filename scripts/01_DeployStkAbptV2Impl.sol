@@ -32,8 +32,8 @@ contract DeployImpl is EthereumScript {
       .createDeterministic(
         address(stkABPTV2Impl),
         MiscEthereum.PROXY_ADMIN,
-        abi.encodeWithSignature(
-          'initialize(string,string,address,address,address,uint256,uint256)',
+        abi.encodeWithSelector(
+          StakeToken.initialize.selector,
           'stk AAVE/wstETH BPTv2', // name
           'stkAAVEwstETHBPTv2', // symbol
           GenericProposal.SLASHING_ADMIN,
