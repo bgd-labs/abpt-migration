@@ -44,6 +44,18 @@ contract ProposalPayload {
       underlyingAsset: AaveSafetyModule.STK_ABPT
     });
     IAaveDistributionManager(AaveSafetyModule.STK_ABPT).configureAssets(disableConfigs);
+    MiscEthereum.AAVE_ECOSYSTEM_RESERVE_CONTROLLER.approve(
+      MiscEthereum.ECOSYSTEM_RESERVE,
+      AaveV3EthereumAssets.AAVE_UNDERLYING,
+      AaveSafetyModule.STK_ABPT,
+      0
+    );
+    MiscEthereum.AAVE_ECOSYSTEM_RESERVE_CONTROLLER.approve(
+      MiscEthereum.ECOSYSTEM_RESERVE,
+      AaveV3EthereumAssets.AAVE_UNDERLYING,
+      AaveSafetyModule.STK_ABPT,
+      15_000 ether // rough estimation on total claimable + emission until execution
+    );
 
     // 3. start emission on module v2
     IAggregatedStakeToken(STK_ABPT_V2_PROXY).setDistributionEnd(
