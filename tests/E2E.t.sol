@@ -36,7 +36,7 @@ contract E2E is Test {
      * ETH: ~2006 $
      * AAVE: ~80.42 $
      */
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 18961127);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 19026444);
     // DeployOracles step0 = new DeployOracles();
     // (address oracle1, address oracle2) = step0._deploy();
     abptOracle = BalancerSharedPoolPriceProvider(0x209Ad99bd808221293d03827B86cC544bcA0023b);
@@ -67,7 +67,6 @@ contract E2E is Test {
       AggregatedStakedTokenV3(STK_ABPT_V1).balanceOf(STK_ABPT_WHALE)
     );
     vm.stopPrank();
-    vm.startPrank(owner);
   }
 
   /**
@@ -75,6 +74,7 @@ contract E2E is Test {
    * The new version enters post slashing mode, which means ppl should be able to withdraw without a cooldown.
    */
   function test_redeem() public {
+    vm.startPrank(owner);
     address abpt = AggregatedStakedTokenV3(STK_ABPT_V1).STAKED_TOKEN();
     uint256 stkAbptBalanceBefore = IERC20(STK_ABPT_V1).balanceOf(owner);
     uint256 abptBalanceBefore = IERC20(abpt).balanceOf(owner);
@@ -88,6 +88,7 @@ contract E2E is Test {
    * @dev Migrate stkAbpt -> stkAbpt v2 via BActions
    */
   function test_migrateStkAbpt() public {
+    vm.startPrank(owner);
     uint256 amount = IERC20(STK_ABPT_V1).balanceOf(owner);
     IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
     uint[] memory tokenOutAmountsMin = new uint[](2);
@@ -104,7 +105,35 @@ contract E2E is Test {
     assertGe(actualBPT, minBptOutWithSlippage, 'RECEIVED_LESS_THEN_MIN');
   }
 
+  function test_migrateStkAbpt_currentHolders() public {
+    address[] memory users = new address[](5);
+    users[0] = 0x7BfeA1979e58AA73beB34D4577272B5Ba16479fD;
+    users[1] = 0x9bec07CB8E702FA848Cda6A958453455053a016e;
+    users[2] = 0x28a55C4b4f9615FDE3CDAdDf6cc01FcF2E38A6b0;
+    users[3] = 0x741AA7CFB2c7bF2A1E7D4dA2e3Df6a56cA4131F3;
+    users[4] = 0xe705b1D26B85c9F9f91A3690079D336295F14F08;
+
+    for (uint256 i = 0; i < users.length; i++) {
+      vm.startPrank(users[i]);
+      uint256 amount = IERC20(STK_ABPT_V1).balanceOf(users[i]);
+      IERC20(STK_ABPT_V1).approve(address(migrator), type(uint256).max);
+      uint[] memory tokenOutAmountsMin = new uint[](2);
+
+      // calculate minOut based on $ value - 0.01 %
+      // this should happen offchain
+      uint256 expectedBptOut = ((amount * uint256(abptOracle.latestAnswer())) /
+        uint256(abptv2Oracle.latestAnswer()));
+      uint256 minBptOutWithSlippage = (expectedBptOut * 9_999) / 10_000;
+
+      migrator.migrateStkABPT(amount, tokenOutAmountsMin, minBptOutWithSlippage);
+
+      uint256 actualBPT = IERC20(stkABPTV2).balanceOf(users[i]);
+      assertGe(actualBPT, minBptOutWithSlippage, 'RECEIVED_LESS_THEN_MIN');
+    }
+  }
+
   function test_migrationWithPermit() public {
+    vm.startPrank(owner);
     SigUtils.Permit memory permit = SigUtils.Permit({
       owner: owner,
       spender: address(migrator),
