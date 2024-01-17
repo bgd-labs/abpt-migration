@@ -9,7 +9,6 @@ import {DistributionTypes} from 'stake-token/contracts/lib/DistributionTypes.sol
 import {IAaveDistributionManager} from 'stake-token/contracts/IAaveDistributionManager.sol';
 import {IAggregatedStakeToken} from 'stake-token/contracts/IAggregatedStakeToken.sol';
 import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
-import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveSafetyModule} from 'aave-address-book/AaveSafetyModule.sol';
 
 /**
