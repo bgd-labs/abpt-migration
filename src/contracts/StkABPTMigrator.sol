@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
-import {AggregatorInterface} from 'aave-address-book/AaveV3.sol';
 import {ILido} from '../interfaces/ILido.sol';
 import {IWeth} from '../interfaces/IWeth.sol';
 import {IWstETH} from '../interfaces/IWstETH.sol';
