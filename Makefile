@@ -9,7 +9,7 @@ update:; forge update
 build  :; forge build --sizes
 test   :; forge test -vvv
 
-deploy-ledger :; forge script ${contract} --rpc-url ${chain} $(if ${dry},--sender 0x25F2226B597E8F9514B3F68F00f494cF4f286491 -vvvv,--broadcast --ledger --mnemonics foo --mnemonic-indexes ${MNEMONIC_INDEX} --sender ${LEDGER_SENDER} --verify -vvvv)
+deploy-ledger :; forge script ${contract} --rpc-url ${chain} $(if ${dry},--sender 0x25F2226B597E8F9514B3F68F00f494cF4f286491 -vvvv,--broadcast --ledger --mnemonics foo --mnemonic-indexes ${MNEMONIC_INDEX} --sender ${LEDGER_SENDER} --verify -vvvv --resume)
 
 # Utilities
 download :; cast etherscan-source --chain ${chain} -d src/etherscan/${chain}_${address} ${address}
@@ -39,3 +39,5 @@ diff-snapshot :
 	npm run clean-storage-report noCooldownStakedToken
 	make git-diff before=reports/currentStakedToken.md after=reports/newStakedToken.md out=NewVersion_storageDiff.md
 	make git-diff before=reports/currentStakedToken.md after=reports/noCooldownStakedToken.md out=NoCooldown_storageDiff.md
+
+deploy-oracles-ledger :; make deploy-ledger contract=scripts/00_PriceOracles.s.sol:DeployOracles chain=mainnet

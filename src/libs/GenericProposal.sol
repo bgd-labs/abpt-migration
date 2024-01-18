@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {AaveMisc} from 'aave-address-book/AaveMisc.sol';
-import {AaveGovernanceV2} from 'aave-address-book/AaveGovernanceV2.sol';
+import {MiscEthereum} from 'aave-address-book/MiscEthereum.sol';
+import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 
 library GenericProposal {
-  address public constant SLASHING_ADMIN = AaveGovernanceV2.SHORT_EXECUTOR;
+  address public constant SLASHING_ADMIN = GovernanceV3Ethereum.EXECUTOR_LVL_1;
 
-  address public constant COOLDOWN_ADMIN = AaveGovernanceV2.SHORT_EXECUTOR;
+  address public constant COOLDOWN_ADMIN = GovernanceV3Ethereum.EXECUTOR_LVL_1;
 
-  address public constant CLAIM_HELPER = AaveGovernanceV2.SHORT_EXECUTOR;
+  address public constant CLAIM_HELPER = GovernanceV3Ethereum.EXECUTOR_LVL_1;
 
-  address public constant REWARDS_VAULT = AaveMisc.ECOSYSTEM_RESERVE;
+  address public constant REWARDS_VAULT = MiscEthereum.ECOSYSTEM_RESERVE;
 
-  address public constant EMISSION_MANAGER = AaveGovernanceV2.SHORT_EXECUTOR;
+  address public constant EMISSION_MANAGER = GovernanceV3Ethereum.EXECUTOR_LVL_1;
 
   uint256 public constant MAX_SLASHING = 3000; // 30%
 
@@ -21,5 +21,5 @@ library GenericProposal {
 
   uint256 public constant UNSTAKE_WINDOW = 172800; // 2 days
 
-  uint128 public constant DISTRIBUTION_DURATION = 3155692600; // 100 years
+  uint128 public constant DISTRIBUTION_DURATION = 365 days; // 1 year
 }
