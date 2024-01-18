@@ -28,22 +28,20 @@ contract DeployImpl is EthereumScript {
       )
     );
 
-    address tokenProxy = ITransparentProxyFactory(MiscEthereum.TRANSPARENT_PROXY_FACTORY)
-      .createDeterministic(
-        address(stkABPTV2Impl),
-        MiscEthereum.PROXY_ADMIN,
-        abi.encodeWithSelector(
-          StakeToken.initialize.selector,
-          'stk AAVE/wstETH BPTv2', // name
-          'stkAAVEwstETHBPTv2', // symbol
-          GenericProposal.SLASHING_ADMIN,
-          GenericProposal.COOLDOWN_ADMIN,
-          GenericProposal.CLAIM_HELPER,
-          GenericProposal.MAX_SLASHING,
-          GenericProposal.COOLDOWN_SECONDS
-        ),
-        'ABPT_V2'
-      );
+    address tokenProxy = ITransparentProxyFactory(MiscEthereum.TRANSPARENT_PROXY_FACTORY).create(
+      address(stkABPTV2Impl),
+      MiscEthereum.PROXY_ADMIN,
+      abi.encodeWithSelector(
+        StakeToken.initialize.selector,
+        'stk AAVE/wstETH BPTv2', // name
+        'stkAAVEwstETHBPTv2', // symbol
+        GenericProposal.SLASHING_ADMIN,
+        GenericProposal.COOLDOWN_ADMIN,
+        GenericProposal.CLAIM_HELPER,
+        GenericProposal.MAX_SLASHING,
+        GenericProposal.COOLDOWN_SECONDS
+      )
+    );
 
     return (
       address(
