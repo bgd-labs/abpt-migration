@@ -19,7 +19,7 @@ contract DeployImpl is EthereumScript {
   function _deploy() public returns (address, address) {
     address stkABPTV2Impl = address(
       new StakeToken(
-        'Aave SM',
+        'stk AAVE/wstETH BPTv2',
         IERC20(Addresses.ABPT_V2),
         IERC20(AaveV3EthereumAssets.AAVE_UNDERLYING),
         GenericProposal.UNSTAKE_WINDOW,
