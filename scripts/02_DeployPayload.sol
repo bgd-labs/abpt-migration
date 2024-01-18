@@ -6,17 +6,20 @@ import {ProposalPayload} from '../src/contracts/ProposalPayload.sol';
 
 /**
  * @notice Deploys a the proposalPayload
+ * deploy-command: make deploy-ledger contract=scripts/02_DeployPayload.sol:DeployPayload chain=mainnet
  */
 contract DeployPayload is EthereumScript {
-  address internal constant STK_ABPT_V1_IMPL = address(0);
-
-  function _deploy(address stkAbptV1Impl, address stkAbptV2Proxy) public returns (address) {
-    require(stkAbptV1Impl != address(0));
-    require(stkAbptV2Proxy != address(0));
-    return address(new ProposalPayload(stkAbptV1Impl, stkAbptV2Proxy));
+  function _deploy() public returns (address) {
+    return
+      address(
+        new ProposalPayload(
+          0x1401bf602d95a0d52978961644B7BDD117Cf6Df6,
+          0x9eDA81C21C273a82BE9Bbc19B6A6182212068101
+        )
+      );
   }
 
   function run() external broadcast {
-    _deploy(STK_ABPT_V1_IMPL, address(0));
+    _deploy();
   }
 }

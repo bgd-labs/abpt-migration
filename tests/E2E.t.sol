@@ -21,12 +21,13 @@ contract E2E is Test {
   address constant STK_ABPT_WHALE = 0xF23c8539069C471F5C12692a3471C9F4E8B88BC2;
   address public constant STK_ABPT_V1 = AaveSafetyModule.STK_ABPT;
 
-  address public stkAbptV1Impl;
-  address public stkAbptV2Impl;
-  address public stkABPTV2;
-  StkABPTMigrator public migrator;
-  BalancerSharedPoolPriceProvider abptOracle;
-  BalancerV2SharedPoolPriceProvider abptv2Oracle;
+  address public constant stkABPTV2 = 0x9eDA81C21C273a82BE9Bbc19B6A6182212068101;
+  StkABPTMigrator public constant migrator =
+    StkABPTMigrator(payable(0xecD4bd3121F9FD604ffaC631bF6d41ec12f1fafb));
+  BalancerSharedPoolPriceProvider constant abptOracle =
+    BalancerSharedPoolPriceProvider(0x209Ad99bd808221293d03827B86cC544bcA0023b);
+  BalancerV2SharedPoolPriceProvider constant abptv2Oracle =
+    BalancerV2SharedPoolPriceProvider(0xADf86b537eF08591c2777E144322E8b0Ca7E82a7);
 
   uint256 internal ownerPrivateKey;
   address internal owner;
@@ -36,22 +37,11 @@ contract E2E is Test {
      * ETH: ~2006 $
      * AAVE: ~80.42 $
      */
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 19026444);
-    // DeployOracles step0 = new DeployOracles();
-    // (address oracle1, address oracle2) = step0._deploy();
-    abptOracle = BalancerSharedPoolPriceProvider(0x209Ad99bd808221293d03827B86cC544bcA0023b);
-    abptv2Oracle = BalancerV2SharedPoolPriceProvider(0xADf86b537eF08591c2777E144322E8b0Ca7E82a7);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 19034233);
 
-    // deploy impls
-    DeployImpl step1 = new DeployImpl();
-    (stkAbptV1Impl, stkABPTV2) = step1._deploy();
-
-    // deploy actual payload
+    // deploy payload
     DeployPayload step2 = new DeployPayload();
-    address payload = step2._deploy(stkAbptV1Impl, stkABPTV2);
-
-    // deploy migration helper
-    migrator = new StkABPTMigrator(stkABPTV2);
+    address payload = step2._deploy();
 
     // execute proposal
     GovV3Helpers.executePayload(vm, payload);

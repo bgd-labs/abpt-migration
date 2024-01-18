@@ -14,6 +14,7 @@ import {Addresses} from '../src/libs/Addresses.sol';
 
 /**
  * @notice Deploys a the implementation for the pool with the bricked initialize.
+ * deploy-command: make deploy-ledger contract=scripts/01_DeployStkAbptV2Impl.sol:DeployImpl chain=mainnet
  */
 contract DeployImpl is EthereumScript {
   function _deploy() public returns (address, address) {
