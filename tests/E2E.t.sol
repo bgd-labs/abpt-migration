@@ -134,20 +134,25 @@ contract E2E is Test {
 
   function test_migrationWithPermit() public {
     vm.startPrank(owner);
+    uint256 amount = AggregatedStakedTokenV3(STK_ABPT_V1).balanceOf(owner);
     SigUtils.Permit memory permit = SigUtils.Permit({
       owner: owner,
       spender: address(migrator),
-      value: AggregatedStakedTokenV3(STK_ABPT_V1).balanceOf(owner),
+      value: amount,
       nonce: AggregatedStakedTokenV3(STK_ABPT_V1)._nonces(owner),
       deadline: block.timestamp + 1 days
     });
 
     bytes32 digest = SigUtils.getTypedDataHash(
       permit,
-      0x97be788f2bcc1c4e15c03b6cfa54541dad55d4d1343f8cfcb92088c1c105de17
+      AggregatedStakedTokenV3(STK_ABPT_V1).DOMAIN_SEPARATOR()
     );
 
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
+    uint256 expectedBptOut = ((amount * uint256(abptOracle.latestAnswer())) /
+      uint256(abptv2Oracle.latestAnswer()));
+    uint256 minBptOutWithSlippage = (expectedBptOut * 9_999) / 10_000;
+
     uint[] memory tokenOutAmountsMin = new uint[](2);
     migrator.migrateStkABPTWithPermit(
       permit.value,
@@ -156,8 +161,11 @@ contract E2E is Test {
       r,
       s,
       tokenOutAmountsMin,
-      0
+      minBptOutWithSlippage
     );
+
+    uint256 actualBPT = IERC20(stkABPTV2).balanceOf(owner);
+    assertGe(actualBPT, minBptOutWithSlippage, 'RECEIVED_LESS_THEN_MIN');
   }
 
   function test_claimRewards() public {
